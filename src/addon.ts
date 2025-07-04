@@ -616,6 +616,24 @@ app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
     }
 });
 
+// Aggiungiamo anche l'endpoint specifico per TV come MammaMia
+app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const id = req.params.id;
+    const config = parseConfigFromArgs(configStr);
+    
+    console.log(`📺 META TV REQUEST: id=${id}, config parsed:`, !!config);
+    
+    const channel = tvChannels.find((c: any) => c.id === id);
+    if (channel) {
+        console.log(`✅ Found meta for TV channel: ${channel.name}`);
+        res.json({ meta: channel });
+    } else {
+        console.log(`❌ No meta found for TV channel ID: ${id}`);
+        res.status(404).json({ error: 'Channel not found' });
+    }
+});
+
 app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) => {
     const configStr = req.params.config;
     const type = req.params.type;
@@ -711,6 +729,80 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
                 res.status(404).json({ error: 'Not found' });
             });
     }
+});
+
+// Aggiungiamo anche l'endpoint specifico per TV stream come MammaMia
+app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const id = req.params.id;
+    const config = parseConfigFromArgs(configStr);
+    
+    console.log(`🎬 TV STREAM REQUEST: id=${id}, config parsed:`, !!config);
+    
+    console.log(`========= TV STREAM REQUEST (SPECIFIC) =========`);
+    console.log(`Channel ID: ${id}`);
+    console.log(`Config received:`, JSON.stringify(config, null, 2));
+    
+    const channel = tvChannels.find((c: any) => c.id === id);
+    if (!channel) {
+        console.log(`❌ Channel ${id} not found in tvChannels`);
+        res.status(404).json({ error: 'Channel not found' });
+        return;
+    }
+    
+    console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
+    
+    const streams: { url: string; title: string }[] = [];
+    const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
+                 (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
+    const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
+    const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+    const staticUrl = (channel as any).staticUrl;
+
+    console.log(`🔧 Configuration:`);
+    console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
+    console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
+    console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
+    console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
+
+    // 1. Stream diretto statico (sempre presente se c'è staticUrl)
+    if (staticUrl) {
+        streams.push({
+            url: staticUrl,
+            title: `${(channel as any).name} - Diretto`
+        });
+        console.log(`✅ Added static stream: ${staticUrl}`);
+    }
+
+    // 2. SEMPRE aggiungi uno stream di test per debug
+    streams.push({
+        url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
+        title: `${(channel as any).name} - TEST STREAM`
+    });
+    console.log(`✅ Added test stream for debugging`);
+
+    // 3. Stream via MFP proxy per MPD (se configurato)
+    if (staticUrl && mfpUrl && mfpPsw) {
+        let proxyUrl: string;
+        if (staticUrl.includes('.mpd')) {
+            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+        } else {
+            proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+        }
+        streams.push({
+            url: proxyUrl,
+            title: `${(channel as any).name} - MFP Proxy`
+        });
+        console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
+    }
+
+    console.log(`🔍 Total streams generated: ${streams.length}`);
+    streams.forEach((stream, index) => {
+        console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
+    });
+    
+    console.log(`========= END TV STREAM REQUEST (SPECIFIC) =========`);
+    res.json({ streams });
 });
 
 const PORT = process.env.PORT || 7860;
