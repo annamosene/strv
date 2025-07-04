@@ -238,26 +238,54 @@ function createBuilder(config: AddonConfig = {}) {
         const channel = tvChannels.find((c: any) => c.id === id);
         if (!channel) return { streams: [] };
         const streams: { url: string; title: string }[] = [];
-        // Normalizza i proxy URL
         const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
-        const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
-        // Statico (MFP)
-        if ((channel as any).staticUrl && mfpUrl && config.mfpProxyPassword) {
+        const mfpPsw = config.mfpProxyPassword || '';
+        const staticUrl = (channel as any).staticUrl;
+
+        // Log per HuggingFace
+        console.log("TV STREAM DEBUG", {
+          id,
+          staticUrl,
+          mfpUrl,
+          mfpPsw,
+          tvProxyUrl: config.tvProxyUrl
+        });
+
+        // Link diretto (sempre)
+        if (staticUrl) {
           streams.push({
-            url: `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(config.mfpProxyPassword)}&d=${encodeURIComponent((channel as any).staticUrl)}`,
-            title: "Statico (MFP)"
+            url: staticUrl,
+            title: "Statico (Direct)"
           });
+          console.log("Aggiunto stream diretto:", staticUrl);
         }
-        // Vavoo (TV Proxy)
+
+        // Link via proxy (se configurato)
+        if (staticUrl && mfpUrl && mfpPsw) {
+          const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+          streams.push({
+            url: proxyUrl,
+            title: "Statico (MFP Proxy)"
+          });
+          console.log("Aggiunto stream proxy:", proxyUrl);
+        }
+
+        // Vavoo (TV Proxy) - opzionale, lasciato invariato
+        const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
         if (tvProxyUrl) {
           const resolved = await resolveVavooChannelByName((channel as any).name);
           if (resolved) {
+            const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
             streams.push({
-              url: `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`,
+              url: vavooUrl,
               title: "Live (Vavoo)"
             });
+            console.log("Aggiunto stream Vavoo:", vavooUrl);
           }
         }
+
+        // Log finale
+        console.log("Streams restituiti per", id, streams);
         return { streams };
       }
       // --- ANIMEUNITY/ANIMESATURN LOGIC ---
