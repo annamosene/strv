@@ -6,7 +6,8 @@
     "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
     "description": "Rai 1 - Canale pubblico italiano",
     "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["RAI1", "RAI 1"]
+    "vavooNames": ["RAI 1"],
+    "epgChannelIds": ["Rai 1.it", "rai1.rai.it", "Rai 1", "RAI1", "skyuno.it"]
   },
   {
     "id": "canale5",
@@ -15,7 +16,8 @@
     "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
     "description": "Canale 5 - Mediaset",
     "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["CANALE5", "CANALE 5"]
+    "vavooNames": ["CANALE5", "CANALE 5"],
+    "epgChannelIds": ["canalecinque.mediaset.it", "canale5.mediaset.it", "Canale 5", "CANALE5"]
   },
   {
     "id": "skynature",
@@ -24,7 +26,28 @@
     "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
     "description": "Sky Nature - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skynature)/master_2hr-aac.mpd?key_id=111553a2ff74eff230c8bb72efc0504c&key=80ec2c7f64b97098f4f65a15d828ce6a",
-    "vavooNames": ["SKYNATURE", "SKY NATURE"]
+    "vavooNames": ["SKYNATURE", "SKY NATURE"],
+    "epgChannelIds": ["skynature.sky.it", "Sky Nature", "SKYNATURE"]
+  },
+  {
+    "id": "pluto-scifi",
+    "type": "tv",
+    "name": "Pluto TV Serie Sci-Fi",
+    "poster": "https://images.pluto.tv/channels/67ed14aaf7c5d70b9089c3bf/colorLogoPNG_1750259768860.png",
+    "description": "Pluto TV Serie Sci-Fi - Canale gratuito",
+    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
+    "vavooNames": ["PLUTO SCIFI"],
+    "epgChannelIds": ["67ed14aaf7c5d70b9089c3bf", "Pluto TV Serie Sci-Fi"]
+  },
+  {
+    "id": "pluto-cartoni",
+    "type": "tv", 
+    "name": "Super! Cartoni Animati",
+    "poster": "https://images.pluto.tv/channels/6093f6f8351eb0000754afb8/colorLogoPNG_1749626196712.png",
+    "description": "Super! Cartoni Animati - Pluto TV",
+    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
+    "vavooNames": ["SUPER CARTONI"],
+    "epgChannelIds": ["6093f6f8351eb0000754afb8", "Super! Cartoni Animati"]
   },
   {
     "id": "test-channel",
@@ -33,6 +56,7 @@
     "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
     "description": "Test Channel per verificare il funzionamento",
     "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["TEST", "TEST CHANNEL"]
+    "vavooNames": ["TEST", "TEST CHANNEL"],
+    "epgChannelIds": ["TEST", "test"]
   }
 ]
