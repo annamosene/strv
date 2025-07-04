@@ -3,12 +3,13 @@ import { getStreamContent, VixCloudStreamInfo, ExtractorConfig } from "./extract
 import * as fs from 'fs';
 import { landingTemplate } from './landingPage';
 import * as path from 'path';
-import express, { Request, Response, NextFunction } from 'express'; // ✅ CORRETTO: Import tipizzato
+import express, { Request, Response, NextFunction } from 'express';
 import { AnimeUnityProvider } from './providers/animeunity-provider';
 import { KitsuProvider } from './providers/kitsu'; 
 import { formatMediaFlowUrl } from './utils/mediaflow';
 import { AnimeUnityConfig } from "./types/animeunity";
 import type { IncomingMessage, ServerResponse } from 'http';
+import { execFile } from 'child_process';
 
 // Interfaccia per la configurazione URL
 interface AddonConfig {
@@ -176,7 +177,6 @@ function parseM3U(m3uPath: string): { name: string; url: string }[] {
 }
 
 // Funzione per risolvere un canale Vavoo tramite lo script Python UNIFICATO
-const { execFile } = require('child_process');
 function resolveVavooChannelByName(channelName: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -253,17 +253,26 @@ function createBuilder(config: AddonConfig = {}) {
 
     // === HANDLER CATALOGO TV ===
     builder.defineCatalogHandler(({ type, id }: { type: string; id: string }) => {
+      console.log(`📺 CATALOG REQUEST: type=${type}, id=${id}`);
       if (type === "tv" && id === "tv-channels") {
+        console.log(`✅ Returning ${tvChannels.length} TV channels for catalog`);
         return Promise.resolve({ metas: tvChannels });
       }
+      console.log(`❌ No catalog found for type=${type}, id=${id}`);
       return Promise.resolve({ metas: [] });
     });
 
     // === HANDLER META TV ===
     builder.defineMetaHandler(({ type, id }: { type: string; id: string }) => {
+      console.log(`📺 META REQUEST: type=${type}, id=${id}`);
       if (type === "tv") {
         const channel = tvChannels.find((c: any) => c.id === id);
-        if (channel) return Promise.resolve({ meta: channel });
+        if (channel) {
+          console.log(`✅ Found meta for channel: ${channel.name}`);
+          return Promise.resolve({ meta: channel });
+        } else {
+          console.log(`❌ No meta found for channel ID: ${id}`);
+        }
       }
       return Promise.resolve({ meta: null });
     });
@@ -554,19 +563,40 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
+// Middleware per gestire tutte le richieste dell'addon con configurazione dinamica
 app.use((req: Request, res: Response, next: NextFunction) => {
     console.log(`🌐 Request: ${req.method} ${req.path}`);
     
-    const configString = req.path.split('/')[1];
+    // Skip per la home page e file statici
+    if (req.path === '/' || req.path.startsWith('/public/')) {
+        return next();
+    }
+    
+    // Estrai la configurazione dal primo segmento del path
+    const pathSegments = req.path.split('/').filter((segment: string) => segment);
+    const configString = pathSegments[0];
     console.log(`🔧 ConfigString from path: ${configString}`);
     
     const config = parseConfigFromArgs(configString);
     console.log(`🔧 Final config for request:`, config);
     
     const builder = createBuilder(config);
-    
     const addonInterface = builder.getInterface();
     const router = getRouter(addonInterface);
+    
+    // Rimuovi il primo segmento dal path per far funzionare il router
+    const originalUrl = req.url;
+    const originalPath = req.path;
+    
+    // Ricostruisci l'URL senza il config segment
+    req.url = '/' + pathSegments.slice(1).join('/');
+    if (req.url === '/') req.url = req.url + (originalUrl.includes('?') ? '?' + originalUrl.split('?')[1] : '');
+    else if (originalUrl.includes('?')) req.url += '?' + originalUrl.split('?')[1];
+    
+    req.path = '/' + pathSegments.slice(1).join('/');
+    if (req.path === '/') req.path = '/';
+    
+    console.log(`🔧 Modified request: ${req.path} (original: ${originalPath})`);
     
     router(req, res, next);
 });
