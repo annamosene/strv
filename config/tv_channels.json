@@ -1,6 +1,7 @@
 [
   {
     "id": "rai1",
+    "type": "tv",
     "name": "Rai 1",
     "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
     "description": "Rai 1 - Canale pubblico italiano",
@@ -9,10 +10,20 @@
   },
   {
     "id": "canale5",
+    "type": "tv",
     "name": "Canale 5",
     "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
     "description": "Canale 5 - Mediaset",
     "staticUrl": "https://static-canale5-url.m3u8",
     "vavooNames": ["CANALE5", "CANALE 5"]
+  },
+  {
+    "id": "skynature",
+    "type": "tv",
+    "name": "Sky Nature",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
+    "description": "Sky Nature - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skynature)/master_2hr-aac.mpd&key_id=111553a2ff74eff230c8bb72efc0504c&key=80ec2c7f64b97098f4f65a15d828ce6a",
+    "vavooNames": ["SKYNATURE", "SKY NATURE"]
   }
-] 
+]
