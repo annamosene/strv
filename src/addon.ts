@@ -3,6 +3,18 @@ import { getStreamContent, VixCloudStreamInfo, ExtractorConfig } from "./extract
 import * as fs from 'fs';
 import { landingTemplate } from './landingPage';
 import * as path from 'path';
+import express, { Request, Response, NextFunction } from 'express'; // ✅ CORRETTO: Import tipizzato
+import { AnimeUnityProvider } from './providers/animeunity-provider';
+import { KitsuProvider } from './providers/kitsu'; 
+import { formatMediaFlowUrl } from './utils/mediaflow';
+import { AnimeUnityConfig } from "./types/animeunity";
+import type { IncomingMessage, ServerResponse } from 'http';
+import { execFile } from 'child_process';
+import process from 'process';donBuilder, getRouter, Manifest, Stream } from "stremio-addon-sdk";
+import { getStreamContent, VixCloudStreamInfo, ExtractorConfig } from "./extractor";
+import * as fs from 'fs';
+import { landingTemplate } from './landingPage';
+import * as path from 'path';
 import express, { Request, Response, NextFunction } from 'express';
 import { AnimeUnityProvider } from './providers/animeunity-provider';
 import { KitsuProvider } from './providers/kitsu'; 
@@ -584,19 +596,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const addonInterface = builder.getInterface();
     const router = getRouter(addonInterface);
     
-    // Rimuovi il primo segmento dal path per far funzionare il router
+    // Crea un nuovo oggetto request con il path modificato
     const originalUrl = req.url;
     const originalPath = req.path;
     
     // Ricostruisci l'URL senza il config segment
-    req.url = '/' + pathSegments.slice(1).join('/');
-    if (req.url === '/') req.url = req.url + (originalUrl.includes('?') ? '?' + originalUrl.split('?')[1] : '');
-    else if (originalUrl.includes('?')) req.url += '?' + originalUrl.split('?')[1];
+    const newUrl = '/' + pathSegments.slice(1).join('/');
+    const finalUrl = newUrl === '/' && originalUrl.includes('?') ? 
+        newUrl + '?' + originalUrl.split('?')[1] : 
+        (originalUrl.includes('?') ? newUrl + '?' + originalUrl.split('?')[1] : newUrl);
     
-    req.path = '/' + pathSegments.slice(1).join('/');
-    if (req.path === '/') req.path = '/';
+    // Modifica solo l'URL mantenendo il path originale
+    Object.defineProperty(req, 'url', { value: finalUrl, writable: true });
     
-    console.log(`🔧 Modified request: ${req.path} (original: ${originalPath})`);
+    console.log(`🔧 Modified request URL: ${finalUrl} (original: ${originalUrl})`);
     
     router(req, res, next);
 });
