@@ -149,12 +149,12 @@ function parseConfigFromArgs(args: any): AddonConfig {
 }
 
 // Funzione per leggere e parsare la playlist M3U generata da vavoom3u.py
-function parseM3U(m3uPath) {
+function parseM3U(m3uPath: string): { name: string; url: string }[] {
   if (!fs.existsSync(m3uPath)) return [];
   const content = fs.readFileSync(m3uPath, 'utf-8');
   const lines = content.split(/\r?\n/);
-  const channels = [];
-  let currentName = null;
+  const channels: { name: string; url: string }[] = [];
+  let currentName: string | null = null;
   for (const line of lines) {
     if (line.startsWith('#EXTINF')) {
       const match = line.match(/,(.*)$/);
@@ -169,9 +169,9 @@ function parseM3U(m3uPath) {
 
 // Funzione per risolvere un canale Vavoo tramite lo script Python UNIFICATO
 const { execFile } = require('child_process');
-function resolveVavooChannelByName(channelName) {
+function resolveVavooChannelByName(channelName: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
-    execFile('python3', ['vavoo_resolver.py', channelName], { timeout: 20000 }, (error, stdout, stderr) => {
+    execFile('python3', ['vavoo_resolver.py', channelName], { timeout: 20000 }, (error: Error | null, stdout: string, stderr: string) => {
       if (error || !stdout) return resolve(null);
       resolve(stdout.trim());
     });
@@ -183,14 +183,14 @@ const tvChannels = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/tv
 const domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
 
 // Aggiorna i canali con i link Vavoo dalla M3U
-function updateVavooUrlsOnChannels(m3uPath) {
+function updateVavooUrlsOnChannels(m3uPath: string): void {
   const m3uChannels = parseM3U(m3uPath);
-  for (const ch of tvChannels) {
-    ch.vavooUrl = null;
-    for (const vname of ch.vavooNames) {
+  for (const c of tvChannels) {
+    (c as any).vavooUrl = null;
+    for (const vname of (c as any).vavooNames) {
       const found = m3uChannels.find(m => m.name.replace(/\s+/g, '') === vname.replace(/\s+/g, ''));
       if (found) {
-        ch.vavooUrl = found.url;
+        (c as any).vavooUrl = found.url;
         break;
       }
     }
@@ -227,7 +227,7 @@ function createBuilder(config: AddonConfig = {}) {
     // === HANDLER META TV ===
     builder.defineMetaHandler(({ type, id }: { type: string; id: string }) => {
       if (type === "tv") {
-        const channel = tvChannels.find(c => c.id === id);
+        const channel = tvChannels.find((c: any) => c.id === id);
         if (channel) return Promise.resolve({ meta: channel });
       }
       return Promise.resolve({ meta: null });
@@ -236,22 +236,22 @@ function createBuilder(config: AddonConfig = {}) {
     // === HANDLER STREAM TV ===
     builder.defineStreamHandler(async ({ type, id }: { type: string; id: string }) => {
       if (type === "tv") {
-        const channel = tvChannels.find(c => c.id === id);
+        const channel = tvChannels.find((c: any) => c.id === id);
         if (!channel) return { streams: [] };
-        const streams = [];
+        const streams: { url: string; title: string }[] = [];
         // Normalizza i proxy URL
         const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
         const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
         // Statico (MFP)
-        if (channel.staticUrl && mfpUrl && config.mfpProxyPassword) {
+        if ((channel as any).staticUrl && mfpUrl && config.mfpProxyPassword) {
           streams.push({
-            url: `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(config.mfpProxyPassword)}&d=${encodeURIComponent(channel.staticUrl)}`,
+            url: `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(config.mfpProxyPassword)}&d=${encodeURIComponent((channel as any).staticUrl)}`,
             title: "Statico (MFP)"
           });
         }
         // Vavoo (TV Proxy)
         if (tvProxyUrl) {
-          const resolved = await resolveVavooChannelByName(channel.name);
+          const resolved = await resolveVavooChannelByName((channel as any).name);
           if (resolved) {
             streams.push({
               url: `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`,
