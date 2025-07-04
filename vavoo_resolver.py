@@ -19,6 +19,7 @@ def get_domain(service):
 VAVOO_DOMAIN = get_domain("vavoo")
 
 def getAuthSignature():
+    """Funzione che replica esattamente quella dell'addon utils.py"""
     headers = {
         "user-agent": "okhttp/4.11.0",
         "accept": "application/json",
@@ -34,18 +35,70 @@ def getAuthSignature():
         "metadata": {
             "device": {
                 "type": "Handset",
-                "os": "Android",
-                "osVersion": "10",
-                "model": "Pixel 4",
-                "brand": "Google"
+                "brand": "google",
+                "model": "Nexus",
+                "name": "21081111RG",
+                "uniqueId": "d10e5d99ab665233"
+            },
+            "os": {
+                "name": "android",
+                "version": "7.1.2",
+                "abis": ["arm64-v8a", "armeabi-v7a", "armeabi"],
+                "host": "android"
+            },
+            "app": {
+                "platform": "android",
+                "version": "3.1.20",
+                "buildId": "289515000",
+                "engine": "hbc85",
+                "signatures": ["6e8a975e3cbf07d5de823a760d4c2547f86c1403105020adee5de67ac510999e"],
+                "installer": "app.revanced.manager.flutter"
+            },
+            "version": {
+                "package": "tv.vavoo.app",
+                "binary": "3.1.20",
+                "js": "3.1.20"
             }
+        },
+        "appFocusTime": 0,
+        "playerActive": False,
+        "playDuration": 0,
+        "devMode": False,
+        "hasAddon": True,
+        "castConnected": False,
+        "package": "tv.vavoo.app",
+        "version": "3.1.20",
+        "process": "app",
+        "firstAppStart": 1743962904623,
+        "lastAppStart": 1743962904623,
+        "ipLocation": "",
+        "adblockEnabled": True,
+        "proxy": {
+            "supported": ["ss", "openvpn"],
+            "engine": "ss",
+            "ssVersion": 1,
+            "enabled": True,
+            "autoServer": True,
+            "id": "pl-waw"
+        },
+        "iap": {
+            "supported": False
         }
     }
-    resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-signature.json", json=data, headers=headers, timeout=10)
-    return resp.json().get("signature")
+    try:
+        resp = requests.post("https://www.vavoo.tv/api/app/ping", json=data, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.json().get("addonSig")
+    except Exception as e:
+        print(f"Errore nel recupero della signature: {e}", file=sys.stderr)
+        return None
 
 def get_channels():
     signature = getAuthSignature()
+    if not signature:
+        print("[DEBUG] Failed to get signature for channels", file=sys.stderr)
+        return []
+    
     headers = {
         "user-agent": "okhttp/4.11.0",
         "accept": "application/json",
@@ -69,17 +122,26 @@ def get_channels():
                 "cursor": cursor,
                 "clientVersion": "3.0.2"
             }
-            resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-catalog.json", json=data, headers=headers, timeout=10)
-            r = resp.json()
-            items = r.get("items", [])
-            all_channels.extend(items)
-            cursor = r.get("nextCursor")
-            if not cursor:
+            try:
+                resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-catalog.json", json=data, headers=headers, timeout=10)
+                resp.raise_for_status()
+                r = resp.json()
+                items = r.get("items", [])
+                all_channels.extend(items)
+                cursor = r.get("nextCursor")
+                if not cursor:
+                    break
+            except Exception as e:
+                print(f"[DEBUG] Error getting channels: {e}", file=sys.stderr)
                 break
     return all_channels
 
 def resolve_vavoo_link(link):
     signature = getAuthSignature()
+    if not signature:
+        print("[DEBUG] Failed to get signature for resolution", file=sys.stderr)
+        return None
+        
     headers = {
         "user-agent": "MediaHubMX/2",
         "accept": "application/json",
@@ -96,14 +158,17 @@ def resolve_vavoo_link(link):
     }
     try:
         resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-resolve.json", json=data, headers=headers, timeout=10)
+        resp.raise_for_status()
         result = resp.json()
         if isinstance(result, list) and result and result[0].get("url"):
             return result[0]["url"]
         elif isinstance(result, dict) and result.get("url"):
             return result["url"]
         else:
+            print(f"[DEBUG] Unexpected response format: {result}", file=sys.stderr)
             return None
     except Exception as e:
+        print(f"[DEBUG] Error resolving link: {e}", file=sys.stderr)
         return None
 
 def normalize_vavoo_name(name):
