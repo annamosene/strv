@@ -129,22 +129,30 @@ function loadCustomConfig(): Manifest {
 
 // Funzione per parsare la configurazione dall'URL
 function parseConfigFromArgs(args: any): AddonConfig {
+    console.log(`🔧 parseConfigFromArgs called with:`, typeof args, args);
+    
     const config: AddonConfig = {};
     
     if (typeof args === 'string') {
         try {
+            console.log(`🔧 Trying to decode string config: ${args}`);
             const decoded = decodeURIComponent(args);
+            console.log(`🔧 Decoded: ${decoded}`);
             const parsed = JSON.parse(decoded);
+            console.log(`🔧 Parsed config:`, parsed);
             return parsed;
         } catch (error) {
+            console.log(`🔧 Failed to parse string config:`, error);
             return {};
         }
     }
     
     if (typeof args === 'object' && args !== null) {
+        console.log(`🔧 Using object config:`, args);
         return args;
     }
     
+    console.log(`🔧 Returning empty config`);
     return config;
 }
 
@@ -205,6 +213,12 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
 const tvChannels = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/tv_channels.json'), 'utf-8'));
 const domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
 
+console.log(`📺 Loaded ${tvChannels.length} TV channels:`);
+tvChannels.forEach((channel: any) => {
+  console.log(`  - ${channel.name} (${channel.id}) - Static URL: ${channel.staticUrl ? 'YES' : 'NO'}`);
+});
+console.log(`🌐 Loaded domains:`, Object.keys(domains));
+
 // Aggiorna i canali con i link Vavoo dalla M3U
 function updateVavooUrlsOnChannels(m3uPath: string): void {
   const m3uChannels = parseM3U(m3uPath);
@@ -257,19 +271,29 @@ function createBuilder(config: AddonConfig = {}) {
     // === HANDLER UNICO STREAM ===
     builder.defineStreamHandler(async ({ type, id }: { type: string; id: string }) => {        // --- TV LOGIC ---
         if (type === "tv") {
+          console.log(`========= TV STREAM REQUEST =========`);
+          console.log(`Channel ID: ${id}`);
+          console.log(`Config received:`, JSON.stringify(config, null, 2));
+          
           const channel = tvChannels.find((c: any) => c.id === id);
-          if (!channel) return { streams: [] };
+          if (!channel) {
+            console.log(`❌ Channel ${id} not found in tvChannels`);
+            return { streams: [] };
+          }
+          
+          console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
+          
           const streams: { url: string; title: string }[] = [];
           const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
           const mfpPsw = config.mfpProxyPassword || '';
           const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
           const staticUrl = (channel as any).staticUrl;
 
-          // Log per debug
-          console.log(`[TV] Processing channel: ${id}`);
-          console.log(`[TV] Static URL: ${staticUrl}`);
-          console.log(`[TV] MFP URL: ${mfpUrl}`);
-          console.log(`[TV] TV Proxy URL: ${tvProxyUrl}`);
+          console.log(`🔧 Configuration:`);
+          console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
+          console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
+          console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
+          console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
 
           // 1. Stream diretto statico (sempre presente se c'è staticUrl)
           if (staticUrl) {
@@ -277,10 +301,19 @@ function createBuilder(config: AddonConfig = {}) {
               url: staticUrl,
               title: `${(channel as any).name} - Diretto`
             });
-            console.log(`[TV] Added static stream for ${id}`);
+            console.log(`✅ Added static stream: ${staticUrl}`);
+          } else {
+            console.log(`❌ No static URL for channel ${id}`);
           }
 
-          // 2. Stream via MFP proxy per MPD (se configurato)
+          // 2. SEMPRE aggiungi uno stream di test per debug
+          streams.push({
+            url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
+            title: `${(channel as any).name} - TEST STREAM`
+          });
+          console.log(`✅ Added test stream for debugging`);
+
+          // 3. Stream via MFP proxy per MPD (se configurato)
           if (staticUrl && mfpUrl && mfpPsw) {
             let proxyUrl: string;
             if (staticUrl.includes('.mpd')) {
@@ -294,7 +327,9 @@ function createBuilder(config: AddonConfig = {}) {
               url: proxyUrl,
               title: `${(channel as any).name} - MFP Proxy`
             });
-            console.log(`[TV] Added MFP proxy stream for ${id}`);
+            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
+          } else {
+            console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
 
           // 3. Stream Vavoo dinamico (risolve in tempo reale)
@@ -335,17 +370,21 @@ function createBuilder(config: AddonConfig = {}) {
             console.log(`[TV] Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
           }
 
-          console.log(`[TV] Total streams for ${id}: ${streams.length}`);
+          console.log(`🔍 Total streams generated: ${streams.length}`);
+          streams.forEach((stream, index) => {
+            console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
+          });
           
           // Se non ci sono stream, aggiungi un messaggio informativo
           if (streams.length === 0) {
-            console.warn(`[TV] No streams available for channel ${id}`);
+            console.warn(`❌ No streams available for channel ${id} - adding fallback`);
             streams.push({
               url: 'data:text/plain;base64,Tm8gc3RyZWFtcyBhdmFpbGFibGU=', // "No streams available"
               title: `${(channel as any).name} - Nessun stream disponibile`
             });
           }
           
+          console.log(`========= END TV STREAM REQUEST =========`);
           return { streams };
         }
       // --- ANIMEUNITY/ANIMESATURN LOGIC ---
@@ -515,8 +554,14 @@ app.get('/', (_: Request, res: Response) => {
 });
 
 app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`🌐 Request: ${req.method} ${req.path}`);
+    
     const configString = req.path.split('/')[1];
+    console.log(`🔧 ConfigString from path: ${configString}`);
+    
     const config = parseConfigFromArgs(configString);
+    console.log(`🔧 Final config for request:`, config);
+    
     const builder = createBuilder(config);
     
     const addonInterface = builder.getInterface();
