@@ -131,23 +131,89 @@ function loadCustomConfig(): Manifest {
     return baseManifest;
 }
 
-// Funzione per parsare la configurazione dall'URL
+// Funzione per codificare la configurazione in Base64 (senza Buffer)
+function encodeConfigToBase64(config: AddonConfig): string {
+    const jsonString = JSON.stringify(config);
+    // Usa encoding manuale per evitare dipendenze da Buffer
+    return btoa(unescape(encodeURIComponent(jsonString)));
+}
+
+// Funzione per decodificare la configurazione da Base64 (senza Buffer)
+function decodeConfigFromBase64(base64String: string): AddonConfig {
+    try {
+        // Decodifica Base64 manualmente
+        const jsonString = decodeURIComponent(escape(atob(base64String)));
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.log(`🔧 Failed to decode Base64 config:`, error);
+        return {};
+    }
+}
+
+// Polyfill per btoa/atob per Node.js
+function btoa(str: string): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let result = '';
+    let i = 0;
+    while (i < str.length) {
+        const a = str.charCodeAt(i++);
+        const b = i < str.length ? str.charCodeAt(i++) : 0;
+        const c = i < str.length ? str.charCodeAt(i++) : 0;
+        const bitmap = (a << 16) | (b << 8) | c;
+        result += chars.charAt((bitmap >> 18) & 63) +
+                  chars.charAt((bitmap >> 12) & 63) +
+                  (i - 1 < str.length ? chars.charAt((bitmap >> 6) & 63) : '=') +
+                  (i - 2 < str.length ? chars.charAt(bitmap & 63) : '=');
+    }
+    return result;
+}
+
+function atob(str: string): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    str = str.replace(/[^A-Za-z0-9+/]/g, '');
+    let result = '';
+    let i = 0;
+    while (i < str.length) {
+        const encoded1 = chars.indexOf(str.charAt(i++));
+        const encoded2 = chars.indexOf(str.charAt(i++));
+        const encoded3 = chars.indexOf(str.charAt(i++));
+        const encoded4 = chars.indexOf(str.charAt(i++));
+        const bitmap = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
+        result += String.fromCharCode((bitmap >> 16) & 255);
+        if (encoded3 !== 64) result += String.fromCharCode((bitmap >> 8) & 255);
+        if (encoded4 !== 64) result += String.fromCharCode(bitmap & 255);
+    }
+    return result;
+}
+
+// Funzione per parsare la configurazione dall'URL (supporta sia JSON che Base64)
 function parseConfigFromArgs(args: any): AddonConfig {
     console.log(`🔧 parseConfigFromArgs called with:`, typeof args, args);
     
     const config: AddonConfig = {};
     
     if (typeof args === 'string') {
+        // Prima prova con Base64
         try {
-            console.log(`🔧 Trying to decode string config: ${args}`);
-            const decoded = decodeURIComponent(args);
-            console.log(`🔧 Decoded: ${decoded}`);
-            const parsed = JSON.parse(decoded);
-            console.log(`🔧 Parsed config:`, parsed);
-            return parsed;
-        } catch (error) {
-            console.log(`🔧 Failed to parse string config:`, error);
-            return {};
+            console.log(`🔧 Trying to decode Base64 config: ${args.substring(0, 50)}...`);
+            const decoded = decodeConfigFromBase64(args);
+            console.log(`🔧 Successfully decoded Base64 config:`, decoded);
+            return decoded;
+        } catch (base64Error) {
+            console.log(`🔧 Base64 decode failed, trying JSON decode...`);
+            
+            // Fallback: prova con JSON tradizionale
+            try {
+                console.log(`🔧 Trying to decode JSON config: ${args}`);
+                const decoded = decodeURIComponent(args);
+                console.log(`🔧 Decoded: ${decoded}`);
+                const parsed = JSON.parse(decoded);
+                console.log(`🔧 Parsed JSON config:`, parsed);
+                return parsed;
+            } catch (jsonError) {
+                console.log(`🔧 Failed to parse both Base64 and JSON config:`, jsonError);
+                return {};
+            }
         }
     }
     
@@ -572,6 +638,19 @@ async function resolveDynamicChannel(id: string): Promise<string | null> {
 // Server Express
 const app = express();
 
+// CORS Headers per tutti i requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+        return;
+    }
+    next();
+});
+
 // MIDDLEWARE GLOBALE PER LOGGING DI TUTTE LE RICHIESTE
 app.use((req: Request, res: Response, next: NextFunction) => {
     const timestamp = new Date().toISOString();
@@ -603,14 +682,52 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
+// Gestione preflight CORS OPTIONS
+app.options('*', (req: Request, res: Response) => {
+    console.log(`🔄 OPTIONS PREFLIGHT request for: ${req.url}`);
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Max-Age', '86400');
+    res.sendStatus(200);
+});
+
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Landing page
 app.get('/', (_: Request, res: Response) => {
     const manifest = loadCustomConfig();
+    
+    // Esempio di configurazione per i test Base64
+    const exampleConfig: AddonConfig = {
+        tmdbApiKey: "",
+        mediaFlowProxyUrl: "",
+        mediaFlowProxyPassword: "",
+        mfpProxyUrl: "https://mfpi.pizzapi.uk/",
+        mfpProxyPassword: "mfp",
+        tvProxyUrl: "https://tvproxy.pizzapi.uk/"
+    };
+    
+    const base64Config = encodeConfigToBase64(exampleConfig);
+    console.log(`🔧 Generated Base64 config for testing: ${base64Config.substring(0, 50)}...`);
+    console.log(`🔧 Example URL: /${base64Config}/manifest.json`);
+    
     const landingHTML = landingTemplate(manifest);
     res.setHeader('Content-Type', 'text/html');
     res.send(landingHTML);
+});
+
+// Manifest endpoint senza configurazione (per test)
+app.get('/manifest.json', (req: Request, res: Response) => {
+    console.log(`📋 SIMPLE MANIFEST REQUEST (no config)`);
+    const manifest = loadCustomConfig();
+    console.log(`📋 SIMPLE MANIFEST DETAILS:`);
+    console.log(`   - ID: ${manifest.id}`);
+    console.log(`   - Types: ${JSON.stringify(manifest.types)}`);
+    console.log(`   - ID Prefixes: ${JSON.stringify(manifest.idPrefixes)}`);
+    console.log(`   - Resources: ${JSON.stringify(manifest.resources)}`);
+    console.log(`   - Catalogs: ${JSON.stringify(manifest.catalogs)}`);
+    res.json(manifest);
 });
 
 // Addon routes with configuration - PATH PARAMETER APPROACH (like MammaMia)
@@ -620,7 +737,14 @@ app.get('/:config/manifest.json', (req: Request, res: Response) => {
     console.log(`📋 MANIFEST REQUEST with config:`, config);
     const builder = createBuilder(config);
     const manifest = builder.getInterface().manifest;
-    console.log(`📋 MANIFEST RESPONSE:`, JSON.stringify(manifest, null, 2));
+    
+    console.log(`📋 MANIFEST RESPONSE DETAILS:`);
+    console.log(`   - ID: ${manifest.id}`);
+    console.log(`   - Types: ${JSON.stringify(manifest.types)}`);
+    console.log(`   - ID Prefixes: ${JSON.stringify(manifest.idPrefixes)}`);
+    console.log(`   - Resources: ${JSON.stringify(manifest.resources)}`);
+    console.log(`   - Catalogs: ${JSON.stringify(manifest.catalogs)}`);
+    
     res.json(manifest);
 });
 
@@ -749,47 +873,47 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
         // 1. Stream diretto statico (sempre presente se c'è staticUrl)
         if (staticUrl) {
             streams.push({
-                url: staticUrl,
-                title: `${(channel as any).name} - Diretto`
+              url: staticUrl,
+              title: `${(channel as any).name} - Diretto`
             });
             console.log(`✅ Added static stream: ${staticUrl}`);
-        } else {
+          } else {
             console.log(`❌ No static URL for channel ${id}`);
-        }
+          }
 
-        // 2. SEMPRE aggiungi uno stream di test per debug
-        streams.push({
+          // 2. SEMPRE aggiungi uno stream di test per debug
+          streams.push({
             url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
             title: `${(channel as any).name} - TEST STREAM`
-        });
-        console.log(`✅ Added test stream for debugging`);
+          });
+          console.log(`✅ Added test stream for debugging`);
 
-        // 3. Stream via MFP proxy per MPD (se configurato)
-        if (staticUrl && mfpUrl && mfpPsw) {
+          // 3. Stream via MFP proxy per MPD (se configurato)
+          if (staticUrl && mfpUrl && mfpPsw) {
             let proxyUrl: string;
             if (staticUrl.includes('.mpd')) {
-                // Per file MPD usiamo il proxy MPD
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+              // Per file MPD usiamo il proxy MPD
+              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
             } else {
-                // Per altri stream usiamo il proxy stream normale
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+              // Per altri stream usiamo il proxy stream normale
+              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
             }
             streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} - MFP Proxy`
+              url: proxyUrl,
+              title: `${(channel as any).name} - MFP Proxy`
             });
             console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
-        } else {
+          } else {
             console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-        }
+          }
 
-        console.log(`🔍 Total streams generated: ${streams.length}`);
-        streams.forEach((stream, index) => {
+          console.log(`🔍 Total streams generated: ${streams.length}`);
+          streams.forEach((stream, index) => {
             console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
-        });
-        
-        console.log(`========= END TV STREAM REQUEST =========`);
-        res.json({ streams });
+          });
+          
+          console.log(`========= END TV STREAM REQUEST =========`);
+          res.json({ streams });
     } else {
         // Per altri tipi (movies, series) usa il builder
         const builder = createBuilder(config);
@@ -883,6 +1007,154 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     
     console.log(`========= END TV STREAM REQUEST (SPECIFIC) =========`);
     res.json({ streams });
+});
+
+// Endpoint per generare URL di configurazione Base64 (per test)
+app.get('/generate-config', (req: Request, res: Response) => {
+    const exampleConfig: AddonConfig = {
+        tmdbApiKey: req.query.tmdbApiKey as string || "",
+        mediaFlowProxyUrl: req.query.mediaFlowProxyUrl as string || "",
+        mediaFlowProxyPassword: req.query.mediaFlowProxyPassword as string || "",
+        mfpProxyUrl: req.query.mfpProxyUrl as string || "https://mfpi.pizzapi.uk/",
+        mfpProxyPassword: req.query.mfpProxyPassword as string || "mfp",
+        tvProxyUrl: req.query.tvProxyUrl as string || "https://tvproxy.pizzapi.uk/"
+    };
+    
+    const base64Config = encodeConfigToBase64(exampleConfig);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const urls = {
+        base64Config: base64Config,
+        manifestUrl: `${baseUrl}/${base64Config}/manifest.json`,
+        catalogUrl: `${baseUrl}/${base64Config}/catalog/tv/tv-channels.json`,
+        testMetaUrl: `${baseUrl}/${base64Config}/meta/tv/tv:skynature.json`,
+        testStreamUrl: `${baseUrl}/${base64Config}/stream/tv/tv:skynature.json`,
+        stremioInstallUrl: `stremio://${req.get('host')}/${base64Config}/manifest.json`
+    };
+    
+    console.log(`🔧 Generated Base64 URLs:`, urls);
+    
+    res.json({
+        message: "Base64 Configuration URLs Generated",
+        config: exampleConfig,
+        ...urls
+    });
+});
+
+// Fallback per qualsiasi pattern di meta che non è stato catturato
+app.get('*/meta/*', (req: Request, res: Response) => {
+    console.log(`🚨 FALLBACK META ENDPOINT HIT: ${req.url}`);
+    console.log(`   Full URL: ${req.url}`);
+    console.log(`   Path: ${req.path}`);
+    console.log(`   Params:`, req.params);
+    
+    // Prova a estrarre il config, type e ID dall'URL manualmente
+    const urlParts = req.path.split('/');
+    console.log(`   URL Parts:`, urlParts);
+    
+    // Cerca pattern /meta/tv/ID.json o /meta/TYPE/ID.json
+    const metaIndex = urlParts.findIndex((part: string) => part === 'meta');
+    if (metaIndex >= 0 && metaIndex + 2 < urlParts.length) {
+        const type = urlParts[metaIndex + 1];
+        const idWithJson = urlParts[metaIndex + 2];
+        const id = idWithJson.replace('.json', '');
+        
+        console.log(`   Extracted: type=${type}, id=${id}`);
+        
+        if (type === 'tv') {
+            const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+            const channel = tvChannels.find((c: any) => c.id === cleanId);
+            if (channel) {
+                console.log(`✅ Found channel via fallback: ${channel.name}`);
+                const metaWithPrefix = {
+                    ...channel,
+                    id: `tv:${channel.id}`
+                };
+                res.json({ meta: metaWithPrefix });
+                return;
+            }
+        }
+    }
+    
+    res.status(404).json({ error: 'Meta not found' });
+});
+
+// Fallback per qualsiasi pattern di stream che non è stato catturato
+app.get('*/stream/*', async (req: Request, res: Response) => {
+    console.log(`🚨 FALLBACK STREAM ENDPOINT HIT: ${req.url}`);
+    console.log(`   Full URL: ${req.url}`);
+    console.log(`   Path: ${req.path}`);
+    console.log(`   Params:`, req.params);
+    
+    // Prova a estrarre il config, type e ID dall'URL manualmente
+    const urlParts = req.path.split('/');
+    console.log(`   URL Parts:`, urlParts);
+    
+    // Cerca pattern /stream/tv/ID.json o /stream/TYPE/ID.json
+    const streamIndex = urlParts.findIndex((part: string) => part === 'stream');
+    if (streamIndex >= 0 && streamIndex + 2 < urlParts.length) {
+        const type = urlParts[streamIndex + 1];
+        const idWithJson = urlParts[streamIndex + 2];
+        const id = idWithJson.replace('.json', '');
+        
+        console.log(`   Extracted: type=${type}, id=${id}`);
+        
+        if (type === 'tv') {
+            const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+            const channel = tvChannels.find((c: any) => c.id === cleanId);
+            if (channel) {
+                console.log(`✅ Found channel via fallback: ${channel.name}`);
+                
+                // Prova a estrarre la config dalla URL (prima parte)
+                let config: AddonConfig = {};
+                try {
+                    const configPart = urlParts[1]; // Dovrebbe essere la parte con la config
+                    if (configPart && configPart !== 'stream') {
+                        config = parseConfigFromArgs(decodeURIComponent(configPart));
+                    }
+                } catch (error) {
+                    console.log(`❌ Cannot parse config from fallback, using empty config`);
+                }
+                
+                console.log(`   Using config:`, config);
+                
+                const streams: { url: string; title: string }[] = [];
+                const staticUrl = (channel as any).staticUrl;
+                
+                // Stream di base
+                if (staticUrl) {
+                    streams.push({
+                        url: staticUrl,
+                        title: `${(channel as any).name} - Diretto (Fallback)`
+                    });
+                }
+                
+                // Stream di test
+                streams.push({
+                    url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
+                    title: `${(channel as any).name} - TEST STREAM (Fallback)`
+                });
+                
+                console.log(`✅ Returning ${streams.length} streams via fallback`);
+                res.json({ streams });
+                return;
+            }
+        }
+    }
+    
+    res.status(404).json({ error: 'Stream not found' });
+});
+
+// Catch-all finale per vedere cosa non viene catturato
+app.get('*', (req: Request, res: Response) => {
+    console.log(`🚨 CATCH-ALL HIT: ${req.method} ${req.url}`);
+    console.log(`   This request was not handled by any previous route`);
+    res.status(404).json({ 
+        error: 'Route not found',
+        method: req.method,
+        url: req.url,
+        path: req.path
+    });
 });
 
 const PORT = process.env.PORT || 7860;
