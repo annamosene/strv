@@ -550,7 +550,7 @@ async function resolveDynamicChannel(id: string): Promise<string | null> {
   return null;
 }
 
-// Server Express
+// Server Express - MammaMia Style Routing
 const app = express();
 
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
@@ -563,70 +563,104 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
-// Addon routes with configuration - DIRECT ROUTING APPROACH
-app.get('/:config/manifest.json', (req: Request, res: Response) => {
-    const config = parseConfigFromArgs(req.params.config);
-    console.log(`📋 MANIFEST REQUEST with config:`, config);
+// MammaMia-style routing with config parameter - EXACT COPY OF WORKING APPROACH
+app.get('/:config*/manifest.json', (req: Request, res: Response) => {
+    const configPath = req.params.config + (req.params[0] || ''); // Capture full path
+    const config = parseConfigFromArgs(configPath);
+    console.log(`📋 MANIFEST REQUEST with config path: ${configPath}`);
+    console.log(`📋 Parsed config:`, config);
+    
     const builder = createBuilder(config);
     const manifest = builder.getInterface().manifest;
+    
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
     res.json(manifest);
 });
 
-app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
-    const config = parseConfigFromArgs(req.params.config);
+app.get('/:config*/catalog/:type/:id.json', async (req: Request, res: Response) => {
+    const configPath = req.params.config + (req.params[0] || '');
+    const config = parseConfigFromArgs(configPath);
     const { type, id } = req.params;
-    console.log(`� CATALOG REQUEST: type=${type}, id=${id}`);
+    console.log(`📺 CATALOG REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    
-    addonInterface.get({ resource: 'catalog', type, id })
-        .then((result: any) => {
-            console.log(`� CATALOG RESULT:`, result);
+    try {
+        if (type === "tv" && id === "tv-channels") {
+            console.log(`✅ Returning ${tvChannels.length} TV channels for catalog`);
+            const result = { metas: tvChannels };
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Headers', '*');
             res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ CATALOG ERROR:`, error);
+        } else {
+            console.log(`❌ No catalog found for type=${type}, id=${id}`);
             res.status(404).json({ error: 'Not found' });
-        });
+        }
+    } catch (error) {
+        console.error(`❌ CATALOG ERROR:`, error);
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
-app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
-    const config = parseConfigFromArgs(req.params.config);
+app.get('/:config*/meta/:type/:id.json', async (req: Request, res: Response) => {
+    const configPath = req.params.config + (req.params[0] || '');
+    const config = parseConfigFromArgs(configPath);
     const { type, id } = req.params;
-    console.log(`📺 META REQUEST: type=${type}, id=${id}`);
+    console.log(`📺 META REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    
-    addonInterface.get({ resource: 'meta', type, id })
-        .then((result: any) => {
-            console.log(`📺 META RESULT:`, result);
-            res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ META ERROR:`, error);
+    try {
+        if (type === "tv") {
+            const channel = tvChannels.find((c: any) => c.id === id);
+            if (channel) {
+                console.log(`✅ Found meta for channel: ${channel.name}`);
+                const meta = {
+                    meta: {
+                        id: channel.id,
+                        type: 'tv',
+                        name: channel.name,
+                        poster: channel.poster,
+                        posterShape: 'landscape',
+                        description: channel.description,
+                        background: channel.poster,
+                        logo: channel.poster,
+                        genres: channel.genres || []
+                    }
+                };
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Headers', '*');
+                res.json(meta);
+            } else {
+                console.log(`❌ No meta found for channel ID: ${id}`);
+                res.status(404).json({ error: 'Not found' });
+            }
+        } else {
             res.status(404).json({ error: 'Not found' });
-        });
+        }
+    } catch (error) {
+        console.error(`❌ META ERROR:`, error);
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
-app.get('/:config/stream/:type/:id.json', (req: Request, res: Response) => {
-    const config = parseConfigFromArgs(req.params.config);
+app.get('/:config*/stream/:type/:id.json', async (req: Request, res: Response) => {
+    const configPath = req.params.config + (req.params[0] || '');
+    const config = parseConfigFromArgs(configPath);
     const { type, id } = req.params;
-    console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}`);
+    console.log(`🎬 STREAM REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    
-    addonInterface.get({ resource: 'stream', type, id })
-        .then((result: any) => {
-            console.log(`🎬 STREAM RESULT:`, result);
-            res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ STREAM ERROR:`, error);
-            res.status(404).json({ error: 'Not found' });
-        });
+    try {
+        const builder = createBuilder(config);
+        const addonInterface = builder.getInterface();
+        
+        const result = await addonInterface.get({ resource: 'stream', type, id });
+        console.log(`🎬 STREAM RESULT:`, result);
+        
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.json(result);
+    } catch (error) {
+        console.error(`❌ STREAM ERROR:`, error);
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
 const PORT = process.env.PORT || 7860;
