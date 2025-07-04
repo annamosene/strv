@@ -562,9 +562,9 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
-// Addon routes with configuration - REGEX ROUTING APPROACH
-app.get(/^\/([^\/]+)\/manifest\.json$/, (req: Request, res: Response) => {
-    const configStr = req.params[0];
+// Addon routes with configuration - PATH PARAMETER APPROACH (like MammaMia)
+app.get('/:config/manifest.json', (req: Request, res: Response) => {
+    const configStr = req.params.config;
     const config = parseConfigFromArgs(configStr);
     console.log(`📋 MANIFEST REQUEST with config:`, config);
     const builder = createBuilder(config);
@@ -572,10 +572,10 @@ app.get(/^\/([^\/]+)\/manifest\.json$/, (req: Request, res: Response) => {
     res.json(manifest);
 });
 
-app.get(/^\/([^\/]+)\/catalog\/([^\/]+)\/([^\/]+)\.json$/, (req: Request, res: Response) => {
-    const configStr = req.params[0];
-    const type = req.params[1];
-    const id = req.params[2];
+app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const type = req.params.type;
+    const id = req.params.id;
     const config = parseConfigFromArgs(configStr);
     
     console.log(`📖 CATALOG REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
@@ -594,10 +594,10 @@ app.get(/^\/([^\/]+)\/catalog\/([^\/]+)\/([^\/]+)\.json$/, (req: Request, res: R
         });
 });
 
-app.get(/^\/([^\/]+)\/meta\/([^\/]+)\/([^\/]+)\.json$/, (req: Request, res: Response) => {
-    const configStr = req.params[0];
-    const type = req.params[1];
-    const id = req.params[2];
+app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const type = req.params.type;
+    const id = req.params.id;
     const config = parseConfigFromArgs(configStr);
     
     console.log(`📺 META REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
@@ -616,10 +616,10 @@ app.get(/^\/([^\/]+)\/meta\/([^\/]+)\/([^\/]+)\.json$/, (req: Request, res: Resp
         });
 });
 
-app.get(/^\/([^\/]+)\/stream\/([^\/]+)\/([^\/]+)\.json$/, (req: Request, res: Response) => {
-    const configStr = req.params[0];
-    const type = req.params[1];
-    const id = req.params[2];
+app.get('/:config/stream/:type/:id.json', (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const type = req.params.type;
+    const id = req.params.id;
     const config = parseConfigFromArgs(configStr);
     
     console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
