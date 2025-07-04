@@ -165,7 +165,7 @@ button:active {
 }
 `
 
-function landingTemplate(manifest: any) {
+function landingTemplate(manifest: any, epgInfo?: any) {
 	const background = manifest.background || 'https://dl.strem.io/addon-background.jpg'
 	const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png'
 	const contactHTML = manifest.contactEmail ?
@@ -176,6 +176,21 @@ function landingTemplate(manifest: any) {
 
 	const stylizedTypes = manifest.types
 		.map((t: string) => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''))
+
+	// EPG Info HTML
+	const epgHTML = epgInfo ? 
+		`<div class="epg-info" style="background: rgba(255,255,255,0.1); padding: 1vh; margin: 1vh 0; border-radius: 4px;">
+			<h3>📺 EPG Status</h3>
+			<p><strong>Canali EPG:</strong> ${epgInfo.channels}</p>
+			<p><strong>Programmi:</strong> ${epgInfo.programs}</p>
+			<p><strong>Ultimo aggiornamento:</strong> ${epgInfo.lastUpdate ? new Date(epgInfo.lastUpdate).toLocaleString('it-IT') : 'Mai'}</p>
+			<div style="margin-top: 1vh;">
+				<a href="/epg/stats" target="_blank" style="color: #8A2BE2; text-decoration: underline;">Visualizza dettagli EPG</a>
+			</div>
+		</div>` : 
+		`<div class="epg-info" style="background: rgba(255,0,0,0.1); padding: 1vh; margin: 1vh 0; border-radius: 4px;">
+			<p>⚠️ EPG non disponibile</p>
+		</div>`
 
 	let formHTML = ''
 	let script = ''
@@ -300,6 +315,8 @@ function landingTemplate(manifest: any) {
 			<div class="separator"></div>
 
 			${formHTML}
+
+			${epgHTML}
 
 			<a id="installLink" class="install-link" href="#">
 			<button name="Install">INSTALL</button>
