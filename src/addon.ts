@@ -555,7 +555,7 @@ const app = express();
 
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 
-// ✅ CORRETTO: Annotazioni di tipo esplicite per Express
+// Landing page
 app.get('/', (_: Request, res: Response) => {
     const manifest = loadCustomConfig();
     const landingHTML = landingTemplate(manifest);
@@ -563,20 +563,70 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
-// Middleware per gestire tutte le richieste dell'addon con configurazione dinamica
-app.use('/:config', (req: Request, res: Response, next: NextFunction) => {
-    console.log(`🌐 Config Route: ${req.method} ${req.path} - Config: ${req.params.config}`);
-    
+// Addon routes with configuration - DIRECT ROUTING APPROACH
+app.get('/:config/manifest.json', (req: Request, res: Response) => {
     const config = parseConfigFromArgs(req.params.config);
-    console.log(`🔧 Final config for request:`, config);
+    console.log(`📋 MANIFEST REQUEST with config:`, config);
+    const builder = createBuilder(config);
+    const manifest = builder.getInterface().manifest;
+    res.json(manifest);
+});
+
+app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
+    const config = parseConfigFromArgs(req.params.config);
+    const { type, id } = req.params;
+    console.log(`� CATALOG REQUEST: type=${type}, id=${id}`);
     
     const builder = createBuilder(config);
     const addonInterface = builder.getInterface();
-    const router = getRouter(addonInterface);
     
-    console.log(`🔧 Calling addon router for path: ${req.path}`);
+    addonInterface.get({ resource: 'catalog', type, id })
+        .then((result: any) => {
+            console.log(`� CATALOG RESULT:`, result);
+            res.json(result);
+        })
+        .catch((error: any) => {
+            console.error(`❌ CATALOG ERROR:`, error);
+            res.status(404).json({ error: 'Not found' });
+        });
+});
+
+app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
+    const config = parseConfigFromArgs(req.params.config);
+    const { type, id } = req.params;
+    console.log(`📺 META REQUEST: type=${type}, id=${id}`);
     
-    router(req, res, next);
+    const builder = createBuilder(config);
+    const addonInterface = builder.getInterface();
+    
+    addonInterface.get({ resource: 'meta', type, id })
+        .then((result: any) => {
+            console.log(`📺 META RESULT:`, result);
+            res.json(result);
+        })
+        .catch((error: any) => {
+            console.error(`❌ META ERROR:`, error);
+            res.status(404).json({ error: 'Not found' });
+        });
+});
+
+app.get('/:config/stream/:type/:id.json', (req: Request, res: Response) => {
+    const config = parseConfigFromArgs(req.params.config);
+    const { type, id } = req.params;
+    console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}`);
+    
+    const builder = createBuilder(config);
+    const addonInterface = builder.getInterface();
+    
+    addonInterface.get({ resource: 'stream', type, id })
+        .then((result: any) => {
+            console.log(`🎬 STREAM RESULT:`, result);
+            res.json(result);
+        })
+        .catch((error: any) => {
+            console.error(`❌ STREAM ERROR:`, error);
+            res.status(404).json({ error: 'Not found' });
+        });
 });
 
 const PORT = process.env.PORT || 7860;
