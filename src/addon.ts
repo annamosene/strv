@@ -583,15 +583,14 @@ app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
     const builder = createBuilder(config);
     const addonInterface = builder.getInterface();
     
-    addonInterface.get({ resource: 'catalog', type, id })
-        .then((result: any) => {
-            console.log(`📖 CATALOG RESULT:`, result);
-            res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ CATALOG ERROR:`, error);
-            res.status(404).json({ error: 'Not found' });
-        });
+    // Chiamata diretta all'handler senza usare .get()
+    if (type === "tv" && id === "tv-channels") {
+        console.log(`✅ Returning ${tvChannels.length} TV channels for catalog`);
+        res.json({ metas: tvChannels });
+    } else {
+        console.log(`❌ No catalog found for type=${type}, id=${id}`);
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
 app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
@@ -602,21 +601,22 @@ app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
     
     console.log(`📺 META REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
     
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    
-    addonInterface.get({ resource: 'meta', type, id })
-        .then((result: any) => {
-            console.log(`📺 META RESULT:`, result);
-            res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ META ERROR:`, error);
+    // Chiamata diretta all'handler senza usare il builder
+    if (type === "tv") {
+        const channel = tvChannels.find((c: any) => c.id === id);
+        if (channel) {
+            console.log(`✅ Found meta for channel: ${channel.name}`);
+            res.json({ meta: channel });
+        } else {
+            console.log(`❌ No meta found for channel ID: ${id}`);
             res.status(404).json({ error: 'Not found' });
-        });
+        }
+    } else {
+        res.status(404).json({ error: 'Not found' });
+    }
 });
 
-app.get('/:config/stream/:type/:id.json', (req: Request, res: Response) => {
+app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) => {
     const configStr = req.params.config;
     const type = req.params.type;
     const id = req.params.id;
@@ -624,18 +624,93 @@ app.get('/:config/stream/:type/:id.json', (req: Request, res: Response) => {
     
     console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
     
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    
-    addonInterface.get({ resource: 'stream', type, id })
-        .then((result: any) => {
-            console.log(`🎬 STREAM RESULT:`, result);
-            res.json(result);
-        })
-        .catch((error: any) => {
-            console.error(`❌ STREAM ERROR:`, error);
-            res.status(404).json({ error: 'Not found' });
+    // Chiamata diretta alla logica di stream
+    if (type === "tv") {
+        console.log(`========= TV STREAM REQUEST =========`);
+        console.log(`Channel ID: ${id}`);
+        console.log(`Config received:`, JSON.stringify(config, null, 2));
+        
+        const channel = tvChannels.find((c: any) => c.id === id);
+        if (!channel) {
+            console.log(`❌ Channel ${id} not found in tvChannels`);
+            res.status(404).json({ error: 'Channel not found' });
+            return;
+        }
+        
+        console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
+        
+        const streams: { url: string; title: string }[] = [];
+        const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
+                     (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
+        const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
+        const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+        const staticUrl = (channel as any).staticUrl;
+
+        console.log(`🔧 Configuration:`);
+        console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
+        console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
+        console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
+        console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
+
+        // 1. Stream diretto statico (sempre presente se c'è staticUrl)
+        if (staticUrl) {
+            streams.push({
+                url: staticUrl,
+                title: `${(channel as any).name} - Diretto`
+            });
+            console.log(`✅ Added static stream: ${staticUrl}`);
+        } else {
+            console.log(`❌ No static URL for channel ${id}`);
+        }
+
+        // 2. SEMPRE aggiungi uno stream di test per debug
+        streams.push({
+            url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
+            title: `${(channel as any).name} - TEST STREAM`
         });
+        console.log(`✅ Added test stream for debugging`);
+
+        // 3. Stream via MFP proxy per MPD (se configurato)
+        if (staticUrl && mfpUrl && mfpPsw) {
+            let proxyUrl: string;
+            if (staticUrl.includes('.mpd')) {
+                // Per file MPD usiamo il proxy MPD
+                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            } else {
+                // Per altri stream usiamo il proxy stream normale
+                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            }
+            streams.push({
+                url: proxyUrl,
+                title: `${(channel as any).name} - MFP Proxy`
+            });
+            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
+        } else {
+            console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+        }
+
+        console.log(`🔍 Total streams generated: ${streams.length}`);
+        streams.forEach((stream, index) => {
+            console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
+        });
+        
+        console.log(`========= END TV STREAM REQUEST =========`);
+        res.json({ streams });
+    } else {
+        // Per altri tipi (movies, series) usa il builder
+        const builder = createBuilder(config);
+        const addonInterface = builder.getInterface();
+        
+        addonInterface.get({ resource: 'stream', type, id })
+            .then((result: any) => {
+                console.log(`🎬 STREAM RESULT:`, result);
+                res.json(result);
+            })
+            .catch((error: any) => {
+                console.error(`❌ STREAM ERROR:`, error);
+                res.status(404).json({ error: 'Not found' });
+            });
+    }
 });
 
 const PORT = process.env.PORT || 7860;
