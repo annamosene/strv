@@ -171,9 +171,32 @@ function parseM3U(m3uPath: string): { name: string; url: string }[] {
 const { execFile } = require('child_process');
 function resolveVavooChannelByName(channelName: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
-    execFile('python3', ['vavoo_resolver.py', channelName], { timeout: 20000 }, (error: Error | null, stdout: string, stderr: string) => {
-      if (error || !stdout) return resolve(null);
-      resolve(stdout.trim());
+    const timeout = setTimeout(() => {
+      console.log(`[Vavoo] Timeout for channel: ${channelName}`);
+      resolve(null);
+    }, 15000); // 15 secondi timeout
+    
+    console.log(`[Vavoo] Resolving channel: ${channelName}`);
+    execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName], { 
+      timeout: 15000,
+      cwd: path.join(__dirname, '..')
+    }, (error: Error | null, stdout: string, stderr: string) => {
+      clearTimeout(timeout);
+      
+      if (error) {
+        console.error(`[Vavoo] Error for ${channelName}:`, error.message);
+        if (stderr) console.error(`[Vavoo] Stderr:`, stderr);
+        return resolve(null);
+      }
+      
+      if (!stdout || stdout.trim() === '') {
+        console.log(`[Vavoo] No output for ${channelName}`);
+        return resolve(null);
+      }
+      
+      const result = stdout.trim();
+      console.log(`[Vavoo] Resolved ${channelName} to: ${result}`);
+      resolve(result);
     });
   });
 }
@@ -232,62 +255,99 @@ function createBuilder(config: AddonConfig = {}) {
     });
 
     // === HANDLER UNICO STREAM ===
-    builder.defineStreamHandler(async ({ type, id }: { type: string; id: string }) => {
-      // --- TV LOGIC ---
-      if (type === "tv") {
-        const channel = tvChannels.find((c: any) => c.id === id);
-        if (!channel) return { streams: [] };
-        const streams: { url: string; title: string }[] = [];
-        const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
-        const mfpPsw = config.mfpProxyPassword || '';
-        const staticUrl = (channel as any).staticUrl;
+    builder.defineStreamHandler(async ({ type, id }: { type: string; id: string }) => {        // --- TV LOGIC ---
+        if (type === "tv") {
+          const channel = tvChannels.find((c: any) => c.id === id);
+          if (!channel) return { streams: [] };
+          const streams: { url: string; title: string }[] = [];
+          const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
+          const mfpPsw = config.mfpProxyPassword || '';
+          const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+          const staticUrl = (channel as any).staticUrl;
 
-        // Log per HuggingFace
-        console.log("TV STREAM DEBUG", {
-          id,
-          staticUrl,
-          mfpUrl,
-          mfpPsw,
-          tvProxyUrl: config.tvProxyUrl
-        });
+          // Log per debug
+          console.log(`[TV] Processing channel: ${id}`);
+          console.log(`[TV] Static URL: ${staticUrl}`);
+          console.log(`[TV] MFP URL: ${mfpUrl}`);
+          console.log(`[TV] TV Proxy URL: ${tvProxyUrl}`);
 
-        // Link diretto (sempre)
-        if (staticUrl) {
-          streams.push({
-            url: staticUrl,
-            title: "Statico (Direct)"
-          });
-          console.log("Aggiunto stream diretto:", staticUrl);
-        }
-
-        // Link via proxy (se configurato)
-        if (staticUrl && mfpUrl && mfpPsw) {
-          const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
-          streams.push({
-            url: proxyUrl,
-            title: "Statico (MFP Proxy)"
-          });
-          console.log("Aggiunto stream proxy:", proxyUrl);
-        }
-
-        // Vavoo (TV Proxy) - opzionale, lasciato invariato
-        const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
-        if (tvProxyUrl) {
-          const resolved = await resolveVavooChannelByName((channel as any).name);
-          if (resolved) {
-            const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
+          // 1. Stream diretto statico (sempre presente se c'è staticUrl)
+          if (staticUrl) {
             streams.push({
-              url: vavooUrl,
-              title: "Live (Vavoo)"
+              url: staticUrl,
+              title: `${(channel as any).name} - Diretto`
             });
-            console.log("Aggiunto stream Vavoo:", vavooUrl);
+            console.log(`[TV] Added static stream for ${id}`);
           }
-        }
 
-        // Log finale
-        console.log("Streams restituiti per", id, streams);
-        return { streams };
-      }
+          // 2. Stream via MFP proxy per MPD (se configurato)
+          if (staticUrl && mfpUrl && mfpPsw) {
+            let proxyUrl: string;
+            if (staticUrl.includes('.mpd')) {
+              // Per file MPD usiamo il proxy MPD
+              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            } else {
+              // Per altri stream usiamo il proxy stream normale
+              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            }
+            streams.push({
+              url: proxyUrl,
+              title: `${(channel as any).name} - MFP Proxy`
+            });
+            console.log(`[TV] Added MFP proxy stream for ${id}`);
+          }
+
+          // 3. Stream Vavoo dinamico (risolve in tempo reale)
+          if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+            try {
+              console.log(`[TV] Trying Vavoo resolution for ${id}`);
+              // Prova tutti i nomi Vavoo per questo canale
+              let vavooResolved = false;
+              for (const vavooName of (channel as any).vavooNames) {
+                if (vavooResolved) break; // Esce al primo successo
+                
+                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                try {
+                  const resolved = await resolveVavooChannelByName(vavooName);
+                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
+                    streams.push({
+                      url: vavooUrl,
+                      title: `${(channel as any).name} - Vavoo Live (${vavooName})`
+                    });
+                    console.log(`[TV] Added Vavoo stream for ${id} with name ${vavooName}`);
+                    vavooResolved = true;
+                  } else {
+                    console.log(`[TV] Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                  }
+                } catch (vavooError) {
+                  console.error(`[TV] Error resolving Vavoo name ${vavooName}:`, vavooError);
+                }
+              }
+              
+              if (!vavooResolved) {
+                console.log(`[TV] No Vavoo streams found for ${id}`);
+              }
+            } catch (error) {
+              console.error(`[TV] General error resolving Vavoo for ${id}:`, error);
+            }
+          } else {
+            console.log(`[TV] Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
+          }
+
+          console.log(`[TV] Total streams for ${id}: ${streams.length}`);
+          
+          // Se non ci sono stream, aggiungi un messaggio informativo
+          if (streams.length === 0) {
+            console.warn(`[TV] No streams available for channel ${id}`);
+            streams.push({
+              url: 'data:text/plain;base64,Tm8gc3RyZWFtcyBhdmFpbGFibGU=', // "No streams available"
+              title: `${(channel as any).name} - Nessun stream disponibile`
+            });
+          }
+          
+          return { streams };
+        }
       // --- ANIMEUNITY/ANIMESATURN LOGIC ---
       try {
         const allStreams: Stream[] = [];
