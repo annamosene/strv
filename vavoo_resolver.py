@@ -113,28 +113,51 @@ def normalize_vavoo_name(name):
     return name.upper()
 
 if __name__ == "__main__":
+    import sys
     if len(sys.argv) < 2:
         print("Usage: python3 vavoo_resolver.py <channel_name>", file=sys.stderr)
         sys.exit(1)
+    
     wanted = normalize_vavoo_name(sys.argv[1])
-    channels = get_channels()
-    found = None
-    for ch in channels:
-        chname = normalize_vavoo_name(ch.get('name', ''))
-        if chname == wanted:
-            found = ch
-            break
-    if not found:
-        print("NOT_FOUND", file=sys.stderr)
-        sys.exit(2)
-    url = found.get('url')
-    if not url:
-        print("NO_URL", file=sys.stderr)
-        sys.exit(3)
-    resolved = resolve_vavoo_link(url)
-    if resolved:
-        print(resolved)
-        sys.exit(0)
-    else:
-        print("RESOLVE_FAIL", file=sys.stderr)
-        sys.exit(4) 
+    print(f"[DEBUG] Looking for channel: {wanted}", file=sys.stderr)
+    
+    try:
+        channels = get_channels()
+        print(f"[DEBUG] Found {len(channels)} total channels", file=sys.stderr)
+        
+        found = None
+        for ch in channels:
+            chname = normalize_vavoo_name(ch.get('name', ''))
+            if chname == wanted:
+                found = ch
+                print(f"[DEBUG] Found matching channel: {ch.get('name')}", file=sys.stderr)
+                break
+        
+        if not found:
+            print(f"[DEBUG] Channel '{wanted}' not found in {len(channels)} channels", file=sys.stderr)
+            # Debug: mostra alcuni nomi di canali per aiutare
+            sample_names = [normalize_vavoo_name(ch.get('name', '')) for ch in channels[:10]]
+            print(f"[DEBUG] Sample channel names: {sample_names}", file=sys.stderr)
+            print("NOT_FOUND", file=sys.stderr)
+            sys.exit(2)
+            
+        url = found.get('url')
+        if not url:
+            print("[DEBUG] No URL found for channel", file=sys.stderr)
+            print("NO_URL", file=sys.stderr)
+            sys.exit(3)
+            
+        print(f"[DEBUG] Resolving URL: {url}", file=sys.stderr)
+        resolved = resolve_vavoo_link(url)
+        if resolved:
+            print(resolved)  # Questo è l'output che viene letto
+            sys.exit(0)
+        else:
+            print("[DEBUG] Failed to resolve URL", file=sys.stderr)
+            print("RESOLVE_FAIL", file=sys.stderr)
+            sys.exit(4)
+            
+    except Exception as e:
+        print(f"[DEBUG] Exception: {str(e)}", file=sys.stderr)
+        print("ERROR", file=sys.stderr)
+        sys.exit(5) 
