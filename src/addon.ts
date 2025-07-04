@@ -9,6 +9,7 @@ import { KitsuProvider } from './providers/kitsu';
 import { formatMediaFlowUrl } from './utils/mediaflow';
 import { AnimeUnityConfig } from "./types/animeunity";
 import { execFile } from 'child_process';
+import { EPGManager } from './utils/epg';
 
 // Definiamo temporaneamente process per evitare errori TypeScript
 declare const process: any;
@@ -140,13 +141,47 @@ function encodeConfigToBase64(config: AddonConfig): string {
 
 // Funzione per decodificare la configurazione da Base64 (senza Buffer)
 function decodeConfigFromBase64(base64String: string): AddonConfig {
+    console.log(`🔧 Attempting to decode Base64 config:`, base64String);
+    console.log(`🔧 Base64 string length:`, base64String.length);
+    
     try {
         // Decodifica Base64 manualmente
         const jsonString = decodeURIComponent(escape(atob(base64String)));
-        return JSON.parse(jsonString);
+        console.log(`🔧 Strategy 1 - decoded JSON string:`, jsonString);
+        const parsed = JSON.parse(jsonString);
+        console.log(`🔧 Strategy 1 - parsed config:`, parsed);
+        return parsed;
     } catch (error) {
-        console.log(`🔧 Failed to decode Base64 config:`, error);
-        return {};
+        console.log(`🔧 Failed to decode Base64 config (trying without decodeURIComponent):`, error);
+        // Fallback: prova senza decodeURIComponent
+        try {
+            const jsonString2 = escape(atob(base64String));
+            console.log(`🔧 Strategy 2 - decoded JSON string:`, jsonString2);
+            const parsed2 = JSON.parse(jsonString2);
+            console.log(`🔧 Strategy 2 - parsed config:`, parsed2);
+            return parsed2;
+        } catch (error2) {
+            console.log(`🔧 Failed to decode Base64 config (second attempt):`, error2);
+            // Ultimo fallback: prova direttamente atob
+            try {
+                const jsonString3 = atob(base64String);
+                console.log(`🔧 Strategy 3 - decoded JSON string:`, jsonString3);
+                const parsed3 = JSON.parse(jsonString3);
+                console.log(`🔧 Strategy 3 - parsed config:`, parsed3);
+                return parsed3;
+            } catch (error3) {
+                console.log(`🔧 Failed to decode Base64 config (final attempt):`, error3);
+                // Fallback finale: se è un JSON string diretto, prova quello
+                try {
+                    const parsed4 = JSON.parse(base64String);
+                    console.log(`🔧 Strategy 4 - direct JSON parse successful:`, parsed4);
+                    return parsed4;
+                } catch (error4) {
+                    console.log(`🔧 All strategies failed, returning empty config:`, error4);
+                    return {};
+                }
+            }
+        }
     }
 }
 
@@ -254,10 +289,19 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
     }, 15000); // 15 secondi timeout
     
     console.log(`[Vavoo] Resolving channel: ${channelName}`);
-    execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName], { 
+    
+    // Usare il path assoluto di python3 e impostare PYTHONPATH
+    const pythonPath = '/usr/bin/python3';
+    const options = { 
       timeout: 15000,
-      cwd: path.join(__dirname, '..')
-    }, (error: Error | null, stdout: string, stderr: string) => {
+      cwd: path.join(__dirname, '..'),
+      env: {
+        ...process.env,
+        PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
+      }
+    };
+    
+    execFile(pythonPath, [path.join(__dirname, '../vavoo_resolver.py'), channelName], options, (error: Error | null, stdout: string, stderr: string) => {
       clearTimeout(timeout);
       
       if (error) {
@@ -282,11 +326,25 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
 const tvChannels = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/tv_channels.json'), 'utf-8'));
 const domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
 
-console.log(`📺 Loaded ${tvChannels.length} TV channels:`);
-tvChannels.forEach((channel: any) => {
-  console.log(`  - ${channel.name} (${channel.id}) - Static URL: ${channel.staticUrl ? 'YES' : 'NO'}`);
-});
-console.log(`🌐 Loaded domains:`, Object.keys(domains));
+// Carica configurazione EPG
+const epgConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/epg_config.json'), 'utf-8'));
+
+// Inizializza EPG Manager
+let epgManager: EPGManager | null = null;
+if (epgConfig.enabled) {
+    epgManager = new EPGManager(epgConfig);
+    console.log(`📺 EPG Manager inizializzato con URL: ${epgConfig.epgUrl}`);
+    console.log(`📺 URL alternativi configurati: ${epgConfig.alternativeUrls?.length || 0}`);
+    
+    // Avvia aggiornamento EPG in background
+    epgManager.updateEPG().then(success => {
+        if (success) {
+            console.log(`✅ EPG aggiornato con successo all'avvio`);
+        } else {
+            console.log(`⚠️ Aggiornamento EPG fallito all'avvio, verrà ritentato al prossimo utilizzo`);
+        }
+    });
+}
 
 // Aggiorna i canali con i link Vavoo dalla M3U
 function updateVavooUrlsOnChannels(m3uPath: string): void {
@@ -337,7 +395,7 @@ function createBuilder(config: AddonConfig = {}) {
     });
 
     // === HANDLER META TV ===
-    builder.defineMetaHandler(({ type, id }: { type: string; id: string }) => {
+    builder.defineMetaHandler(async ({ type, id }: { type: string; id: string }) => {
       console.log(`📺 META REQUEST: type=${type}, id=${id}`);
       if (type === "tv") {
         // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
@@ -345,11 +403,58 @@ function createBuilder(config: AddonConfig = {}) {
         const channel = tvChannels.find((c: any) => c.id === cleanId);
         if (channel) {
           console.log(`✅ Found meta for channel: ${channel.name} (original id: ${cleanId})`);
-          // Mantieni l'ID originale con prefisso nella risposta
+          
+          // Prepara i metadati base
           const metaWithPrefix = {
             ...channel,
             id: `tv:${channel.id}`
           };
+
+          // Aggiungi informazioni EPG se disponibili
+          if (epgManager) {
+            try {
+              // Usa prima gli epgChannelIds dal canale, poi fallback al nome
+              const epgChannelIds = (channel as any).epgChannelIds;
+              const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+              
+              if (epgChannelId) {
+                console.log(`📺 EPG Channel ID trovato per ${channel.name}: ${epgChannelId}`);
+                
+                // Ottieni programma corrente e prossimo
+                const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
+                const nextProgram = await epgManager.getNextProgram(epgChannelId);
+                
+                if (currentProgram || nextProgram) {
+                  let epgDescription = channel.description || '';
+                  
+                  if (currentProgram) {
+                    const startTime = epgManager.formatTime(currentProgram.start);
+                    const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
+                    epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
+                    if (currentProgram.description) {
+                      epgDescription += `\n${currentProgram.description}`;
+                    }
+                  }
+                  
+                  if (nextProgram) {
+                    const nextStartTime = epgManager.formatTime(nextProgram.start);
+                    const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
+                    epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
+                    if (nextProgram.description) {
+                      epgDescription += `\n${nextProgram.description}`;
+                    }
+                  }
+                  
+                  metaWithPrefix.description = epgDescription;
+                }
+              } else {
+                console.log(`⚠️ Nessun EPG Channel ID trovato per ${channel.name}${epgChannelIds ? ` (IDs cercati: ${epgChannelIds.join(', ')})` : ''}`);
+              }
+            } catch (epgError) {
+              console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
+            }
+          }
+          
           return Promise.resolve({ meta: metaWithPrefix });
         } else {
           console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
@@ -390,25 +495,9 @@ function createBuilder(config: AddonConfig = {}) {
           console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
           console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
 
-          // 1. Stream diretto statico (sempre presente se c'è staticUrl)
-          if (staticUrl) {
-            streams.push({
-              url: staticUrl,
-              title: `${(channel as any).name} - Diretto`
-            });
-            console.log(`✅ Added static stream: ${staticUrl}`);
-          } else {
-            console.log(`❌ No static URL for channel ${id}`);
-          }
+          // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 2. SEMPRE aggiungi uno stream di test per debug
-          streams.push({
-            url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
-            title: `${(channel as any).name} - TEST STREAM`
-          });
-          console.log(`✅ Added test stream for debugging`);
-
-          // 3. Stream via MFP proxy per MPD (se configurato)
+          // 1. Stream via MFP proxy per MPD (se configurato)
           if (staticUrl && mfpUrl && mfpPsw) {
             let proxyUrl: string;
             if (staticUrl.includes('.mpd')) {
@@ -427,10 +516,13 @@ function createBuilder(config: AddonConfig = {}) {
             console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
 
-          // 3. Stream Vavoo dinamico (risolve in tempo reale)
+          // 2. Stream Vavoo dinamico (risolve in tempo reale)
           if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
             try {
               console.log(`[TV] Trying Vavoo resolution for ${id}`);
+              console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
+              console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
+              
               // Prova tutti i nomi Vavoo per questo canale
               let vavooResolved = false;
               for (const vavooName of (channel as any).vavooNames) {
@@ -439,30 +531,32 @@ function createBuilder(config: AddonConfig = {}) {
                 console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
                 try {
                   const resolved = await resolveVavooChannelByName(vavooName);
+                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  
                   if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
                     const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
                     streams.push({
                       url: vavooUrl,
                       title: `${(channel as any).name} - Vavoo Live (${vavooName})`
                     });
-                    console.log(`[TV] Added Vavoo stream for ${id} with name ${vavooName}`);
+                    console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
                     vavooResolved = true;
                   } else {
-                    console.log(`[TV] Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
                   }
                 } catch (vavooError) {
-                  console.error(`[TV] Error resolving Vavoo name ${vavooName}:`, vavooError);
+                  console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
                 }
               }
               
               if (!vavooResolved) {
-                console.log(`[TV] No Vavoo streams found for ${id}`);
+                console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
               }
             } catch (error) {
-              console.error(`[TV] General error resolving Vavoo for ${id}:`, error);
+              console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
             }
           } else {
-            console.log(`[TV] Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
+            console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
           }
 
           console.log(`🔍 Total streams generated: ${streams.length}`);
@@ -695,7 +789,7 @@ app.options('*', (req: Request, res: Response) => {
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Landing page
-app.get('/', (_: Request, res: Response) => {
+app.get('/', async (_: Request, res: Response) => {
     const manifest = loadCustomConfig();
     
     // Esempio di configurazione per i test Base64
@@ -712,7 +806,17 @@ app.get('/', (_: Request, res: Response) => {
     console.log(`🔧 Generated Base64 config for testing: ${base64Config.substring(0, 50)}...`);
     console.log(`🔧 Example URL: /${base64Config}/manifest.json`);
     
-    const landingHTML = landingTemplate(manifest);
+    // Aggiungi informazioni EPG se disponibili
+    let epgInfo = null;
+    if (epgManager) {
+        try {
+            epgInfo = epgManager.getStats();
+        } catch (error) {
+            console.error('Error getting EPG stats:', error);
+        }
+    }
+    
+    const landingHTML = landingTemplate(manifest, epgInfo);
     res.setHeader('Content-Type', 'text/html');
     res.send(landingHTML);
 });
@@ -870,25 +974,9 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
         console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
         console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
 
-        // 1. Stream diretto statico (sempre presente se c'è staticUrl)
-        if (staticUrl) {
-            streams.push({
-              url: staticUrl,
-              title: `${(channel as any).name} - Diretto`
-            });
-            console.log(`✅ Added static stream: ${staticUrl}`);
-          } else {
-            console.log(`❌ No static URL for channel ${id}`);
-          }
+        // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 2. SEMPRE aggiungi uno stream di test per debug
-          streams.push({
-            url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
-            title: `${(channel as any).name} - TEST STREAM`
-          });
-          console.log(`✅ Added test stream for debugging`);
-
-          // 3. Stream via MFP proxy per MPD (se configurato)
+          // 1. Stream via MFP proxy per MPD (se configurato)
           if (staticUrl && mfpUrl && mfpPsw) {
             let proxyUrl: string;
             if (staticUrl.includes('.mpd')) {
@@ -905,6 +993,49 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
             console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
           } else {
             console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+          }
+
+          // 2. Stream Vavoo dinamico (risolve in tempo reale)
+          if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+            try {
+              console.log(`[TV] Trying Vavoo resolution for ${id}`);
+              console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
+              console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
+              
+              // Prova tutti i nomi Vavoo per questo canale
+              let vavooResolved = false;
+              for (const vavooName of (channel as any).vavooNames) {
+                if (vavooResolved) break; // Esce al primo successo
+                
+                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                try {
+                  const resolved = await resolveVavooChannelByName(vavooName);
+                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  
+                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
+                    streams.push({
+                      url: vavooUrl,
+                      title: `${(channel as any).name} - Vavoo Live (${vavooName})`
+                    });
+                    console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
+                    vavooResolved = true;
+                  } else {
+                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                  }
+                } catch (vavooError) {
+                  console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
+                }
+              }
+              
+              if (!vavooResolved) {
+                console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
+              }
+            } catch (error) {
+              console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
+            }
+          } else {
+            console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
           }
 
           console.log(`🔍 Total streams generated: ${streams.length}`);
@@ -969,23 +1100,9 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
     console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
 
-    // 1. Stream diretto statico (sempre presente se c'è staticUrl)
-    if (staticUrl) {
-        streams.push({
-            url: staticUrl,
-            title: `${(channel as any).name} - Diretto`
-        });
-        console.log(`✅ Added static stream: ${staticUrl}`);
-    }
+    // Stream rimossi: "diretto" e "test" come richiesto
 
-    // 2. SEMPRE aggiungi uno stream di test per debug
-    streams.push({
-        url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
-        title: `${(channel as any).name} - TEST STREAM`
-    });
-    console.log(`✅ Added test stream for debugging`);
-
-    // 3. Stream via MFP proxy per MPD (se configurato)
+    // 1. Stream via MFP proxy per MPD (se configurato)
     if (staticUrl && mfpUrl && mfpPsw) {
         let proxyUrl: string;
         if (staticUrl.includes('.mpd')) {
@@ -1000,6 +1117,49 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
     }
 
+    // 2. Stream Vavoo dinamico (risolve in tempo reale)
+    if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+        try {
+            console.log(`[TV] Trying Vavoo resolution for ${id}`);
+            console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
+            console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
+            
+            // Prova tutti i nomi Vavoo per questo canale
+            let vavooResolved = false;
+            for (const vavooName of (channel as any).vavooNames) {
+                if (vavooResolved) break; // Esce al primo successo
+                
+                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                try {
+                  const resolved = await resolveVavooChannelByName(vavooName);
+                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  
+                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(resolved)}`;
+                    streams.push({
+                      url: vavooUrl,
+                      title: `${(channel as any).name} - Vavoo Live (${vavooName})`
+                    });
+                    console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
+                    vavooResolved = true;
+                  } else {
+                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                  }
+                } catch (vavooError) {
+                  console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
+                }
+              }
+              
+              if (!vavooResolved) {
+                console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
+              }
+        } catch (error) {
+          console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
+        }
+    } else {
+        console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
+    }
+
     console.log(`🔍 Total streams generated: ${streams.length}`);
     streams.forEach((stream, index) => {
         console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
@@ -1007,6 +1167,176 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     
     console.log(`========= END TV STREAM REQUEST (SPECIFIC) =========`);
     res.json({ streams });
+});
+
+// Endpoint per ottenere statistiche EPG (deve essere prima degli endpoint dinamici)
+app.get('/epg/stats', (req: Request, res: Response) => {
+    if (!epgManager) {
+        res.status(503).json({ error: 'EPG not enabled' });
+        return;
+    }
+    
+    const stats = epgManager.getStats();
+    const availableChannels = epgManager.getAvailableChannels();
+    
+    // Mappatura dei canali TV con EPG
+    const channelMapping: any[] = [];
+    for (const tvChannel of tvChannels) {
+        const epgChannelIds = tvChannel.epgChannelIds || [];
+        const epgChannelId = epgManager.findEPGChannelId(tvChannel.name, epgChannelIds);
+        channelMapping.push({
+            tvChannel: {
+                id: tvChannel.id,
+                name: tvChannel.name,
+                epgChannelIds: epgChannelIds
+            },
+            epgChannel: epgChannelId ? availableChannels.find(c => c.id === epgChannelId) : null,
+            mapped: !!epgChannelId
+        });
+    }
+    
+    res.json({
+        ...stats,
+        totalEPGChannels: availableChannels.length,
+        mappedChannels: channelMapping.filter(m => m.mapped).length,
+        unmappedChannels: channelMapping.filter(m => !m.mapped).length,
+        channelMapping: channelMapping
+    });
+});
+
+// Endpoint EPG per ottenere i programmi di un canale
+app.get('/epg/:channelId', async (req: Request, res: Response) => {
+    const channelId = req.params.channelId;
+    const date = req.query.date ? new Date(req.query.date as string) : new Date();
+    
+    console.log(`📺 EPG REQUEST for channel: ${channelId}, date: ${date.toISOString()}`);
+    
+    if (!epgManager) {
+        res.status(503).json({ error: 'EPG not enabled' });
+        return;
+    }
+    
+    try {
+        // Trova il canale TV corrispondente
+        const tvChannel = tvChannels.find((c: any) => c.id === channelId);
+        if (!tvChannel) {
+            res.status(404).json({ error: 'Channel not found' });
+            return;
+        }
+        
+        // Trova l'ID EPG
+        const epgChannelIds = (tvChannel as any).epgChannelIds;
+        const epgChannelId = epgManager.findEPGChannelId(tvChannel.name, epgChannelIds);
+        if (!epgChannelId) {
+            res.status(404).json({ error: 'EPG channel not found' });
+            return;
+        }
+        
+        // Ottieni i programmi
+        const programs = await epgManager.getEPGForChannel(epgChannelId, date);
+        
+        res.json({
+            channel: {
+                id: channelId,
+                name: tvChannel.name,
+                epgId: epgChannelId
+            },
+            date: date.toISOString().split('T')[0],
+            programs: programs.map(p => ({
+                start: p.start,
+                stop: p.stop,
+                title: p.title,
+                description: p.description,
+                category: p.category,
+                startTime: epgManager!.formatTime(p.start),
+                endTime: p.stop ? epgManager!.formatTime(p.stop) : null
+            }))
+        });
+    } catch (error) {
+        console.error(`❌ EPG Error for ${channelId}:`, error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Endpoint per ottenere il programma corrente
+app.get('/epg/:channelId/current', async (req: Request, res: Response) => {
+    const channelId = req.params.channelId;
+    
+    if (!epgManager) {
+        res.status(503).json({ error: 'EPG not enabled' });
+        return;
+    }
+    
+    try {
+        const tvChannel = tvChannels.find((c: any) => c.id === channelId);
+        if (!tvChannel) {
+            res.status(404).json({ error: 'Channel not found' });
+            return;
+        }
+        
+        const epgChannelId = epgManager.findEPGChannelId(tvChannel.name);
+        if (!epgChannelId) {
+            res.status(404).json({ error: 'EPG channel not found' });
+            return;
+        }
+        
+        const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
+        const nextProgram = await epgManager.getNextProgram(epgChannelId);
+        
+        res.json({
+            channel: {
+                id: channelId,
+                name: tvChannel.name,
+                epgId: epgChannelId
+            },
+            current: currentProgram ? {
+                ...currentProgram,
+                startTime: epgManager.formatTime(currentProgram.start),
+                endTime: currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : null
+            } : null,
+            next: nextProgram ? {
+                ...nextProgram,
+                startTime: epgManager.formatTime(nextProgram.start),
+                endTime: nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : null
+            } : null
+        });
+    } catch (error) {
+        console.error(`❌ EPG Error for ${channelId}:`, error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Endpoint per aggiornare manualmente l'EPG
+app.post('/epg/update', async (req: Request, res: Response) => {
+    if (!epgManager) {
+        res.status(503).json({ error: 'EPG not enabled' });
+        return;
+    }
+    
+    console.log(`🔄 Manual EPG update requested`);
+    
+    try {
+        const success = await epgManager.updateEPG();
+        if (success) {
+            const stats = epgManager.getStats();
+            res.json({
+                success: true,
+                message: 'EPG updated successfully',
+                stats: stats
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'EPG update failed'
+            });
+        }
+    } catch (error) {
+        console.error(`❌ Manual EPG update error:`, error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
 });
 
 // Endpoint per generare URL di configurazione Base64 (per test)
@@ -1121,21 +1451,9 @@ app.get('*/stream/*', async (req: Request, res: Response) => {
                 const streams: { url: string; title: string }[] = [];
                 const staticUrl = (channel as any).staticUrl;
                 
-                // Stream di base
-                if (staticUrl) {
-                    streams.push({
-                        url: staticUrl,
-                        title: `${(channel as any).name} - Diretto (Fallback)`
-                    });
-                }
+                // Stream rimossi: "diretto" e "test" come richiesto - mantengo solo Vavoo se disponibile
                 
-                // Stream di test
-                streams.push({
-                    url: 'https://realtv.b-cdn.net/realtv-edge.m3u8',
-                    title: `${(channel as any).name} - TEST STREAM (Fallback)`
-                });
-                
-                console.log(`✅ Returning ${streams.length} streams via fallback`);
+                console.log(`✅ Returning ${streams.length} streams via fallback (only Vavoo if available)`);
                 res.json({ streams });
                 return;
             }
