@@ -1,0 +1,18 @@
+[
+  {
+    "id": "rai1",
+    "name": "Rai 1",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
+    "description": "Rai 1 - Canale pubblico italiano",
+    "staticUrl": "https://static-rai1-url.m3u8",
+    "vavooNames": ["RAI1", "RAI 1"]
+  },
+  {
+    "id": "canale5",
+    "name": "Canale 5",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
+    "description": "Canale 5 - Mediaset",
+    "staticUrl": "https://static-canale5-url.m3u8",
+    "vavooNames": ["CANALE5", "CANALE 5"]
+  }
+] 

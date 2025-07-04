@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVix Addon for Stremio</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2em; max-width: 800px; margin: auto; background: #1a1a1a; color: #e0e0e0; }
+        h1 { color: #ae4545; }
+        a { color: #ae4545; }
+        .install-button-container { padding: 2em 0; }
+        .install-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #ae4545;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <h1>StreamVix Stremio Addon</h1>
+    <p>This addon provides streams from VixSrc for movies and series.</p>
+    <div class="install-button-container">
+        <a id="install-link" href="#" class="install-button">Install Addon</a>
+    </div>
+    <div class="install-button-container">
+        <a id="livetv-link" href="/catalog/tv/tv-channels.json" class="install-button" style="background-color:#2a7b2a;">Live TV</a>
+    </div>
+    <form id="config-form" style="margin-top:2em;">
+        <h2>Configurazione Proxy</h2>
+        <label><input type="checkbox" id="enableLiveTV"> Abilita Live TV</label><br><br>
+        <label>MFP Render Proxy (per MPD):<br><input type="text" id="mfpProxyUrl" placeholder="https://mfp-proxy-url" style="width:100%"></label><br><br>
+        <label>MFP Password:<br><input type="text" id="mfpProxyPassword" placeholder="password" style="width:100%"></label><br><br>
+        <label>TV Proxy (per Vavoo):<br><input type="text" id="tvProxyUrl" placeholder="https://tv-proxy-url" style="width:100%"></label><br><br>
+        <button type="submit" class="install-button" style="background-color:#2a7b2a;">Salva Configurazione</button>
+    </form>
+    <script>
+        const installLink = document.getElementById('install-link');
+        const manifestUrl = `${window.location.protocol}//${window.location.host}/manifest.json`;
+        installLink.href = `stremio://install-addon/${encodeURIComponent(manifestUrl)}`;
+        // Live TV link già impostato
+        // Config form: salva su localStorage (o invia a backend se necessario)
+        document.getElementById('config-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            function cleanUrl(url) {
+                return url.endsWith('/') ? url.slice(0, -1) : url;
+            }
+            const config = {
+                enableLiveTV: document.getElementById('enableLiveTV').checked,
+                mfpProxyUrl: cleanUrl(document.getElementById('mfpProxyUrl').value),
+                mfpProxyPassword: document.getElementById('mfpProxyPassword').value,
+                tvProxyUrl: cleanUrl(document.getElementById('tvProxyUrl').value)
+            };
+            localStorage.setItem('streamvix_config', JSON.stringify(config));
+            alert('Configurazione salvata! (Nota: il salvataggio locale è solo per demo, la configurazione reale avviene tramite Stremio)');
+        });
+    </script>
+</body>
+</html>
