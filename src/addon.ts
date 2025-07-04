@@ -10,9 +10,9 @@ import { formatMediaFlowUrl } from './utils/mediaflow';
 import { AnimeUnityConfig } from "./types/animeunity";
 import { execFile } from 'child_process';
 
-// Definiamo temporaneamente process e __dirname per evitare errori TypeScript
+// Definiamo temporaneamente process per evitare errori TypeScript
 declare const process: any;
-const __dirname = (globalThis as any).process?.cwd() || '.';
+declare const __dirname: string;
 
 // Interfaccia per la configurazione URL
 interface AddonConfig {
