@@ -253,17 +253,26 @@ function createBuilder(config: AddonConfig = {}) {
 
     // === HANDLER CATALOGO TV ===
     builder.defineCatalogHandler(({ type, id }: { type: string; id: string }) => {
+      console.log(`📺 CATALOG REQUEST: type=${type}, id=${id}`);
       if (type === "tv" && id === "tv-channels") {
+        console.log(`✅ Returning ${tvChannels.length} TV channels for catalog`);
         return Promise.resolve({ metas: tvChannels });
       }
+      console.log(`❌ No catalog found for type=${type}, id=${id}`);
       return Promise.resolve({ metas: [] });
     });
 
     // === HANDLER META TV ===
     builder.defineMetaHandler(({ type, id }: { type: string; id: string }) => {
+      console.log(`📺 META REQUEST: type=${type}, id=${id}`);
       if (type === "tv") {
         const channel = tvChannels.find((c: any) => c.id === id);
-        if (channel) return Promise.resolve({ meta: channel });
+        if (channel) {
+          console.log(`✅ Found meta for channel: ${channel.name}`);
+          return Promise.resolve({ meta: channel });
+        } else {
+          console.log(`❌ No meta found for channel ID: ${id}`);
+        }
       }
       return Promise.resolve({ meta: null });
     });
@@ -555,39 +564,17 @@ app.get('/', (_: Request, res: Response) => {
 });
 
 // Middleware per gestire tutte le richieste dell'addon con configurazione dinamica
-app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`🌐 Request: ${req.method} ${req.path}`);
+app.use('/:config', (req: Request, res: Response, next: NextFunction) => {
+    console.log(`🌐 Config Route: ${req.method} ${req.path} - Config: ${req.params.config}`);
     
-    // Skip per la home page e file statici
-    if (req.path === '/' || req.path.startsWith('/public/')) {
-        return next();
-    }
-    
-    // Estrai la configurazione dal primo segmento del path
-    const pathSegments = req.path.split('/').filter((segment: string) => segment);
-    const configString = pathSegments[0];
-    console.log(`🔧 ConfigString from path: ${configString}`);
-    
-    const config = parseConfigFromArgs(configString);
+    const config = parseConfigFromArgs(req.params.config);
     console.log(`🔧 Final config for request:`, config);
     
     const builder = createBuilder(config);
     const addonInterface = builder.getInterface();
     const router = getRouter(addonInterface);
     
-    // Crea un nuovo oggetto request con il path modificato
-    const originalUrl = req.url;
-    
-    // Ricostruisci l'URL senza il config segment
-    const newUrl = '/' + pathSegments.slice(1).join('/');
-    const finalUrl = newUrl === '/' && originalUrl.includes('?') ? 
-        newUrl + '?' + originalUrl.split('?')[1] : 
-        (originalUrl.includes('?') ? newUrl + '?' + originalUrl.split('?')[1] : newUrl);
-    
-    // Modifica solo l'URL mantenendo il path originale
-    Object.defineProperty(req, 'url', { value: finalUrl, writable: true });
-    
-    console.log(`🔧 Modified request URL: ${finalUrl} (original: ${originalUrl})`);
+    console.log(`🔧 Calling addon router for path: ${req.path}`);
     
     router(req, res, next);
 });
