@@ -175,7 +175,7 @@ export class EPGManager {
      */
     private parseXMLEPG(xmlContent: string): Promise<EPGData | null> {
         return new Promise((resolve) => {
-            parseString(xmlContent, (err, result) => {
+            parseString(xmlContent, (err: any, result: any) => {
                 if (err) {
                     console.error('❌ Errore nel parsing XML EPG:', err);
                     resolve(null);
