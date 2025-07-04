@@ -563,9 +563,9 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
-// MammaMia-style routing with config parameter - EXACT COPY OF WORKING APPROACH
-app.get('/:config*/manifest.json', (req: Request, res: Response) => {
-    const configPath = req.params.config + (req.params[0] || ''); // Capture full path
+// MammaMia-style routing with config parameter - FIXED PATTERNS
+app.get(/^\/(.+)\/manifest\.json$/, (req: Request, res: Response) => {
+    const configPath = req.params[0]; // Get the full config path
     const config = parseConfigFromArgs(configPath);
     console.log(`📋 MANIFEST REQUEST with config path: ${configPath}`);
     console.log(`📋 Parsed config:`, config);
@@ -578,10 +578,11 @@ app.get('/:config*/manifest.json', (req: Request, res: Response) => {
     res.json(manifest);
 });
 
-app.get('/:config*/catalog/:type/:id.json', async (req: Request, res: Response) => {
-    const configPath = req.params.config + (req.params[0] || '');
+app.get(/^\/(.+)\/catalog\/([^/]+)\/([^/]+)\.json$/, async (req: Request, res: Response) => {
+    const configPath = req.params[0];
+    const type = req.params[1];
+    const id = req.params[2];
     const config = parseConfigFromArgs(configPath);
-    const { type, id } = req.params;
     console.log(`📺 CATALOG REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
     try {
@@ -601,10 +602,11 @@ app.get('/:config*/catalog/:type/:id.json', async (req: Request, res: Response) 
     }
 });
 
-app.get('/:config*/meta/:type/:id.json', async (req: Request, res: Response) => {
-    const configPath = req.params.config + (req.params[0] || '');
+app.get(/^\/(.+)\/meta\/([^/]+)\/([^/]+)\.json$/, async (req: Request, res: Response) => {
+    const configPath = req.params[0];
+    const type = req.params[1];
+    const id = req.params[2];
     const config = parseConfigFromArgs(configPath);
-    const { type, id } = req.params;
     console.log(`📺 META REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
     try {
@@ -641,10 +643,11 @@ app.get('/:config*/meta/:type/:id.json', async (req: Request, res: Response) => 
     }
 });
 
-app.get('/:config*/stream/:type/:id.json', async (req: Request, res: Response) => {
-    const configPath = req.params.config + (req.params[0] || '');
+app.get(/^\/(.+)\/stream\/([^/]+)\/([^/]+)\.json$/, async (req: Request, res: Response) => {
+    const configPath = req.params[0];
+    const type = req.params[1];
+    const id = req.params[2];
     const config = parseConfigFromArgs(configPath);
-    const { type, id } = req.params;
     console.log(`🎬 STREAM REQUEST: config=${configPath}, type=${type}, id=${id}`);
     
     try {
