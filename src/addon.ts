@@ -10,32 +10,8 @@ import { formatMediaFlowUrl } from './utils/mediaflow';
 import { AnimeUnityConfig } from "./types/animeunity";
 import { execFile } from 'child_process';
 
-// Definiamo temporaneamente process e __dirname per evitare erro// Aggiungiamo anche l'endpoint specifico per TV come MammaMia
-app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
-    const configStr = req.params.config;
-    const id = req.params.id;
-    const config = parseConfigFromArgs(configStr);
-    
-    console.log(`📺 META TV REQUEST: id=${id}, config parsed:`, !!config);
-    
-    // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-    console.log(`Clean ID for lookup: ${cleanId}`);
-    
-    const channel = tvChannels.find((c: any) => c.id === cleanId);
-    if (channel) {
-        console.log(`✅ Found meta for TV channel: ${channel.name} (original id: ${cleanId})`);
-        // Mantieni l'ID originale con prefisso nella risposta
-        const metaWithPrefix = {
-            ...channel,
-            id: `tv:${channel.id}`
-        };
-        res.json({ meta: metaWithPrefix });
-    } else {
-        console.log(`❌ No meta found for TV channel ID: ${id} (cleaned: ${cleanId})`);
-        res.status(404).json({ error: 'Channel not found' });
-    }
-});clare const process: any;
+// Definiamo temporaneamente process e __dirname per evitare errori TypeScript
+declare const process: any;
 const __dirname = (globalThis as any).process?.cwd() || '.';
 
 // Interfaccia per la configurazione URL
@@ -637,15 +613,6 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
-// Middleware per loggare tutte le richieste
-app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    console.log(`🌐 Headers:`, JSON.stringify(req.headers, null, 2));
-    console.log(`🌐 Query:`, JSON.stringify(req.query, null, 2));
-    console.log(`🌐 Params:`, JSON.stringify(req.params, null, 2));
-    next();
-});
-
 // Addon routes with configuration - PATH PARAMETER APPROACH (like MammaMia)
 app.get('/:config/manifest.json', (req: Request, res: Response) => {
     const configStr = req.params.config;
@@ -720,12 +687,21 @@ app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
     
     console.log(`📺 META TV REQUEST: id=${id}, config parsed:`, !!config);
     
-    const channel = tvChannels.find((c: any) => c.id === id);
+    // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
+    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+    console.log(`Clean ID for lookup: ${cleanId}`);
+    
+    const channel = tvChannels.find((c: any) => c.id === cleanId);
     if (channel) {
-        console.log(`✅ Found meta for TV channel: ${channel.name}`);
-        res.json({ meta: channel });
+        console.log(`✅ Found meta for TV channel: ${channel.name} (original id: ${cleanId})`);
+        // Mantieni l'ID originale con prefisso nella risposta
+        const metaWithPrefix = {
+            ...channel,
+            id: `tv:${channel.id}`
+        };
+        res.json({ meta: metaWithPrefix });
     } else {
-        console.log(`❌ No meta found for TV channel ID: ${id}`);
+        console.log(`❌ No meta found for TV channel ID: ${id} (cleaned: ${cleanId})`);
         res.status(404).json({ error: 'Channel not found' });
     }
 });
