@@ -284,8 +284,9 @@ function createBuilder(config: AddonConfig = {}) {
           console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
           
           const streams: { url: string; title: string }[] = [];
-          const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : '';
-          const mfpPsw = config.mfpProxyPassword || '';
+          const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
+                       (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
+          const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
           const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
           const staticUrl = (channel as any).staticUrl;
 
