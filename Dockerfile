@@ -28,6 +28,10 @@ RUN npm install -g pnpm@8.15.5
 # Se sono già presenti dopo il git clone, puoi ometterlo o assicurarti che i percorsi siano corretti.
 # COPY package.json pnpm-lock.yaml ./ 
 
+# Installa Python e le dipendenze per lo script Vavoo
+RUN apt-get update && apt-get install -y python3 python3-pip
+RUN pip3 install requests
+
 # Assicura che l'utente node sia proprietario della directory dell'app e del suo contenuto
 RUN chown -R node:node /usr/src/app
 # Torna all'utente node per le operazioni di pnpm e l'esecuzione dell'app
@@ -51,6 +55,7 @@ RUN pnpm run build
 # Copia i file di configurazione e lo script Python
 COPY config/tv_channels.json ./config/tv_channels.json
 COPY config/domains.json ./config/domains.json
+COPY config/epg_config.json ./config/epg_config.json
 COPY vavoo_resolver.py ./vavoo_resolver.py
 
 # Assicurati che vavoo_resolver.py sia eseguibile
