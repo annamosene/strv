@@ -3,18 +3,6 @@ import { getStreamContent, VixCloudStreamInfo, ExtractorConfig } from "./extract
 import * as fs from 'fs';
 import { landingTemplate } from './landingPage';
 import * as path from 'path';
-import express, { Request, Response, NextFunction } from 'express'; // ✅ CORRETTO: Import tipizzato
-import { AnimeUnityProvider } from './providers/animeunity-provider';
-import { KitsuProvider } from './providers/kitsu'; 
-import { formatMediaFlowUrl } from './utils/mediaflow';
-import { AnimeUnityConfig } from "./types/animeunity";
-import type { IncomingMessage, ServerResponse } from 'http';
-import { execFile } from 'child_process';
-import process from 'process';donBuilder, getRouter, Manifest, Stream } from "stremio-addon-sdk";
-import { getStreamContent, VixCloudStreamInfo, ExtractorConfig } from "./extractor";
-import * as fs from 'fs';
-import { landingTemplate } from './landingPage';
-import * as path from 'path';
 import express, { Request, Response, NextFunction } from 'express';
 import { AnimeUnityProvider } from './providers/animeunity-provider';
 import { KitsuProvider } from './providers/kitsu'; 
@@ -265,26 +253,17 @@ function createBuilder(config: AddonConfig = {}) {
 
     // === HANDLER CATALOGO TV ===
     builder.defineCatalogHandler(({ type, id }: { type: string; id: string }) => {
-      console.log(`📺 CATALOG REQUEST: type=${type}, id=${id}`);
       if (type === "tv" && id === "tv-channels") {
-        console.log(`✅ Returning ${tvChannels.length} TV channels for catalog`);
         return Promise.resolve({ metas: tvChannels });
       }
-      console.log(`❌ No catalog found for type=${type}, id=${id}`);
       return Promise.resolve({ metas: [] });
     });
 
     // === HANDLER META TV ===
     builder.defineMetaHandler(({ type, id }: { type: string; id: string }) => {
-      console.log(`📺 META REQUEST: type=${type}, id=${id}`);
       if (type === "tv") {
         const channel = tvChannels.find((c: any) => c.id === id);
-        if (channel) {
-          console.log(`✅ Found meta for channel: ${channel.name}`);
-          return Promise.resolve({ meta: channel });
-        } else {
-          console.log(`❌ No meta found for channel ID: ${id}`);
-        }
+        if (channel) return Promise.resolve({ meta: channel });
       }
       return Promise.resolve({ meta: null });
     });
@@ -598,7 +577,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     
     // Crea un nuovo oggetto request con il path modificato
     const originalUrl = req.url;
-    const originalPath = req.path;
     
     // Ricostruisci l'URL senza il config segment
     const newUrl = '/' + pathSegments.slice(1).join('/');
