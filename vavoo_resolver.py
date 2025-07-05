@@ -223,10 +223,11 @@ def resolve_direct_link(link):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python3 vavoo_resolver.py <channel_name_or_vavoo_link>", file=sys.stderr)
+        print("Usage: python3 vavoo_resolver.py <channel_name_or_vavoo_link> [--original-link]", file=sys.stderr)
         sys.exit(1)
     
     input_arg = sys.argv[1]
+    return_original_link = "--original-link" in sys.argv
     
     # Controlla se l'input è un link Vavoo diretto
     if "vavoo.to" in input_arg and "/play/" in input_arg:
@@ -298,6 +299,14 @@ if __name__ == "__main__":
             print("NO_URL", file=sys.stderr)
             sys.exit(3)
             
+        print(f"[DEBUG] Found Vavoo URL: {url}", file=sys.stderr)
+        
+        # Se richiesto, restituisci solo il link originale Vavoo
+        if return_original_link:
+            print(url)  # Restituisce il link Vavoo originale non risolto
+            sys.exit(0)
+        
+        # Altrimenti risolvi il link
         print(f"[DEBUG] Resolving URL: {url}", file=sys.stderr)
         resolved = resolve_vavoo_link(url)
         if resolved:
