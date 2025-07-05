@@ -715,10 +715,10 @@ function createBuilder(config: AddonConfig = {}) {
             }
           }
 
-          // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
-          if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+          // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
+          if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
             try {
-              console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
+              console.log(`[TV] Trying Vavoo original link for ${id}`);
               console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
               console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
               
@@ -755,8 +755,6 @@ function createBuilder(config: AddonConfig = {}) {
             } catch (error) {
               console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
             }
-          } else if (isFreeToAir) {
-            console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
           } else {
             console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
           }
@@ -1359,10 +1357,10 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
           }
         }
 
-        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
-        if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
+        if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
           try {
-            console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
+            console.log(`[TV] Trying Vavoo original link for ${id}`);
             console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
             console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
             
@@ -1399,11 +1397,9 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
           } catch (error) {
             console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
           }
-        } else if (isFreeToAir) {
-          console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
-        } else {
-          console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
-        }
+                  } else {
+            console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
+          }
 
           console.log(`🔍 Total streams generated: ${streams.length}`);
           streams.forEach((stream, index) => {
@@ -1532,10 +1528,10 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       }
     }
 
-        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
-    if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
+    if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
         try {
-            console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
+            console.log(`[TV] Trying Vavoo original link for ${id}`);
             console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
             console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
             
@@ -1572,8 +1568,6 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         } catch (error) {
             console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
         }
-    } else if (isFreeToAir) {
-        console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
     } else {
         console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
     }
