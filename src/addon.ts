@@ -202,41 +202,41 @@ function atob(str: string): string {
 
 // Funzione per parsare la configurazione dall'URL (supporta sia JSON che Base64)
 function parseConfigFromArgs(args: any): AddonConfig {
-    console.log(`🔧 [DEBUG] parseConfigFromArgs called with:`, typeof args, args);
+    console.log(`🔧 parseConfigFromArgs called with:`, typeof args, args);
     
     const config: AddonConfig = {};
     
     if (typeof args === 'string') {
         // Prima prova con Base64
         try {
-            console.log(`🔧 [DEBUG] Trying to decode Base64 config: ${args.substring(0, 50)}...`);
+            console.log(`🔧 Trying to decode Base64 config: ${args.substring(0, 50)}...`);
             const decoded = decodeConfigFromBase64(args);
-            console.log(`🔧 [DEBUG] Successfully decoded Base64 config:`, JSON.stringify(decoded, null, 2));
+            console.log(`🔧 Successfully decoded Base64 config:`, decoded);
             return decoded;
         } catch (base64Error) {
-            console.log(`🔧 [DEBUG] Base64 decode failed, trying JSON decode...`);
+            console.log(`🔧 Base64 decode failed, trying JSON decode...`);
             
             // Fallback: prova con JSON tradizionale
             try {
-                console.log(`🔧 [DEBUG] Trying to decode JSON config: ${args}`);
+                console.log(`🔧 Trying to decode JSON config: ${args}`);
                 const decoded = decodeURIComponent(args);
-                console.log(`🔧 [DEBUG] Decoded: ${decoded}`);
+                console.log(`🔧 Decoded: ${decoded}`);
                 const parsed = JSON.parse(decoded);
-                console.log(`🔧 [DEBUG] Parsed JSON config:`, JSON.stringify(parsed, null, 2));
+                console.log(`🔧 Parsed JSON config:`, parsed);
                 return parsed;
             } catch (jsonError) {
-                console.log(`🔧 [DEBUG] Failed to parse both Base64 and JSON config:`, jsonError);
+                console.log(`🔧 Failed to parse both Base64 and JSON config:`, jsonError);
                 return {};
             }
         }
     }
     
     if (typeof args === 'object' && args !== null) {
-        console.log(`🔧 [DEBUG] Using object config:`, JSON.stringify(args, null, 2));
+        console.log(`🔧 Using object config:`, args);
         return args;
     }
     
-    console.log(`🔧 [DEBUG] Returning empty config`);
+    console.log(`🔧 Returning empty config`);
     return config;
 }
 
@@ -293,6 +293,45 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
       
       const result = stdout.trim();
       console.log(`[Vavoo] Resolved ${channelName} to: ${result}`);
+      resolve(result);
+    });
+  });
+}
+
+// Funzione per ottenere il link Vavoo originale (non risolto)
+function getVavooOriginalLink(channelName: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      console.log(`[Vavoo] Timeout for original link: ${channelName}`);
+      resolve(null);
+    }, 10000);
+
+    console.log(`[Vavoo] Getting original link for channel: ${channelName}`);
+    
+    const options = {
+      timeout: 10000,
+      env: {
+        ...process.env,
+        PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
+      }
+    };
+    
+    execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName, '--original-link'], options, (error: Error | null, stdout: string, stderr: string) => {
+      clearTimeout(timeout);
+      
+      if (error) {
+        console.error(`[Vavoo] Error getting original link for ${channelName}:`, error.message);
+        if (stderr) console.error(`[Vavoo] Stderr:`, stderr);
+        return resolve(null);
+      }
+      
+      if (!stdout || stdout.trim() === '') {
+        console.log(`[Vavoo] No original link output for ${channelName}`);
+        return resolve(null);
+      }
+      
+      const result = stdout.trim();
+      console.log(`[Vavoo] Original link for ${channelName}: ${result}`);
       resolve(result);
     });
   });
@@ -473,67 +512,29 @@ function createBuilder(config: AddonConfig = {}) {
 
           // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 1. Stream via MFP proxy per MPD (se configurato) - FIXED
+          // 1. Stream via MFP proxy per MPD (se configurato)
           if (staticUrl && mfpUrl && mfpPsw) {
-            try {
-              console.log(`🔧 Processing static URL: ${staticUrl}`);
-              
-              // Parse dell'URL per separare base e parametri
-              const urlObj = new URL(staticUrl);
-              const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
-              const searchParams = urlObj.searchParams;
-              
-              console.log(`🔧 Base URL extracted: ${baseUrl}`);
-              console.log(`🔧 Query parameters:`, Array.from(searchParams.entries()));
-              
-              // Costruisci l'URL MFP base
-              let proxyUrl: string;
-              if (staticUrl.includes('.mpd')) {
-                // Per file MPD usiamo il proxy MPD
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
-              } else {
-                // Per altri stream usiamo il proxy stream normale
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
-              }
-              
-              // Aggiungi key_id e key come parametri separati (se presenti)
-              if (searchParams.has('key_id')) {
-                proxyUrl += `&key_id=${encodeURIComponent(searchParams.get('key_id')!)}`;
-                console.log(`🔧 Added key_id parameter: ${searchParams.get('key_id')}`);
-              }
-              if (searchParams.has('key')) {
-                proxyUrl += `&key=${encodeURIComponent(searchParams.get('key')!)}`;
-                console.log(`🔧 Added key parameter: ${searchParams.get('key')}`);
-              }
-              
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} - MFP Proxy (FIXED)`
-              });
-              console.log(`✅ Added FIXED MFP proxy stream: ${proxyUrl}`);
-            } catch (urlError) {
-              console.log(`❌ Error parsing URL for MFP proxy: ${urlError}`);
-              // Fallback alla logica precedente
-              let proxyUrl: string;
-              if (staticUrl.includes('.mpd')) {
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              } else {
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              }
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} - MFP Proxy (Fallback)`
-              });
-              console.log(`✅ Added fallback MFP proxy stream: ${proxyUrl}`);
+            let proxyUrl: string;
+            if (staticUrl.includes('.mpd')) {
+              // Per file MPD usiamo il proxy MPD
+              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+            } else {
+              // Per altri stream usiamo il proxy stream normale
+              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
             }
+            streams.push({
+              url: proxyUrl,
+              title: `${(channel as any).name} - MFP Proxy`
+            });
+            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
           } else {
             console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
 
-          // 2. Stream Vavoo dinamico (risolve in tempo reale)
+          // 2. Stream Vavoo dinamico (ottieni link originale per proxy)
           if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
             try {
-              console.log(`[TV] Trying Vavoo resolution for ${id}`);
+              console.log(`[TV] Trying Vavoo original link for ${id}`);
               console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
               console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
               
@@ -542,14 +543,14 @@ function createBuilder(config: AddonConfig = {}) {
               for (const vavooName of (channel as any).vavooNames) {
                 if (vavooResolved) break; // Esce al primo successo
                 
-                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
                 try {
-                  const resolved = await resolveVavooChannelByName(vavooName);
-                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  const originalLink = await getVavooOriginalLink(vavooName);
+                  console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
                   
-                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
-                    // NON applicare encodeURIComponent al link risolto - è già pronto per l'uso
-                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${resolved}`;
+                  if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
+                    // Passa il link Vavoo originale al proxy (NON quello risolto)
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
                     streams.push({
                       url: vavooUrl,
                       title: `${(channel as any).name} - Vavoo Live (${vavooName})`
@@ -557,7 +558,7 @@ function createBuilder(config: AddonConfig = {}) {
                     console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
                     vavooResolved = true;
                   } else {
-                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                    console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
                   }
                 } catch (vavooError) {
                   console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
@@ -1016,68 +1017,69 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
 
         // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 1. Stream via MFP proxy per MPD (se configurato) - FIXED GENERAL ENDPOINT
+          // 1. Stream via MFP proxy per MPD (se configurato)
           console.log(`🔧 GENERAL ENDPOINT - Checking MFP: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           if (staticUrl && mfpUrl && mfpPsw) {
+            let proxyUrl: string;
+            
+            // Parse dell'URL static per estrarre key_id e key se presenti
+            let baseUrl = staticUrl;
+            const urlParams = new URLSearchParams();
+            
+            console.log(`🔧 Original staticUrl: ${staticUrl}`);
+            
             try {
-              console.log(`🔧 Processing static URL (GENERAL): ${staticUrl}`);
-              
-              // Parse dell'URL per separare base e parametri
-              const urlObj = new URL(staticUrl);
-              const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
-              const searchParams = urlObj.searchParams;
-              
-              console.log(`🔧 Base URL extracted (GENERAL): ${baseUrl}`);
-              console.log(`🔧 Query parameters (GENERAL):`, Array.from(searchParams.entries()));
-              
-              // Costruisci l'URL MFP base
-              let proxyUrl: string;
-              if (staticUrl.includes('.mpd')) {
-                // Per file MPD usiamo il proxy MPD
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
-              } else {
-                // Per altri stream usiamo il proxy stream normale
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
-              }
-              
-              // Aggiungi key_id e key come parametri separati (se presenti)
-              if (searchParams.has('key_id')) {
-                proxyUrl += `&key_id=${encodeURIComponent(searchParams.get('key_id')!)}`;
-                console.log(`🔧 Added key_id parameter (GENERAL): ${searchParams.get('key_id')}`);
-              }
-              if (searchParams.has('key')) {
-                proxyUrl += `&key=${encodeURIComponent(searchParams.get('key')!)}`;
-                console.log(`🔧 Added key parameter (GENERAL): ${searchParams.get('key')}`);
-              }
-              
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} - MFP Proxy (FIXED)`
-              });
-              console.log(`✅ Added FIXED MFP proxy stream (GENERAL): ${proxyUrl}`);
-            } catch (urlError) {
-              console.log(`❌ Error parsing URL for MFP proxy (GENERAL): ${urlError}`);
-              // Fallback alla logica precedente
-              let proxyUrl: string;
-              if (staticUrl.includes('.mpd')) {
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              } else {
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              }
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} - MFP Proxy (Fallback)`
-              });
-              console.log(`✅ Added fallback MFP proxy stream (GENERAL): ${proxyUrl}`);
+                const urlObj = new URL(staticUrl);
+                // Prendi solo il base URL senza parametri
+                baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+                
+                console.log(`🔧 Parsed baseUrl: ${baseUrl}`);
+                
+                // Estrai key_id e key dai parametri originali
+                const keyId = urlObj.searchParams.get('key_id');
+                const key = urlObj.searchParams.get('key');
+                
+                console.log(`🔧 Extracted key_id: ${keyId}`);
+                console.log(`🔧 Extracted key: ${key}`);
+                
+                if (keyId) urlParams.append('key_id', keyId);
+                if (key) urlParams.append('key', key);
+                
+                console.log(`🔧 URL params to append: ${urlParams.toString()}`);
+                
+            } catch (e) {
+                // Se l'URL non è valido, usa quello originale
+                console.log('🔧 URL parsing failed, using original URL');
             }
+            
+            if (staticUrl.includes('.mpd')) {
+              // Per file MPD usiamo il proxy MPD
+              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${baseUrl}`;
+            } else {
+              // Per altri stream usiamo il proxy stream normale
+              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${baseUrl}`;
+            }
+            
+            // Aggiungi i parametri key_id e key separatamente
+            if (urlParams.toString()) {
+                proxyUrl += `&${urlParams.toString()}`;
+            }
+            
+            console.log(`🔧 Final proxyUrl: ${proxyUrl}`);
+            
+            streams.push({
+              url: proxyUrl,
+              title: `${(channel as any).name} - MFP Proxy`
+            });
+            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
           } else {
-            console.log(`❌ Cannot create MFP proxy (GENERAL): staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+            console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
 
-          // 2. Stream Vavoo dinamico (risolve in tempo reale)
+          // 2. Stream Vavoo dinamico (ottieni link originale per proxy)
           if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
             try {
-              console.log(`[TV] Trying Vavoo resolution for ${id}`);
+              console.log(`[TV] Trying Vavoo original link for ${id}`);
               console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
               console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
               
@@ -1086,14 +1088,14 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
               for (const vavooName of (channel as any).vavooNames) {
                 if (vavooResolved) break; // Esce al primo successo
                 
-                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
                 try {
-                  const resolved = await resolveVavooChannelByName(vavooName);
-                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  const originalLink = await getVavooOriginalLink(vavooName);
+                  console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
                   
-                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
-                    // NON applicare encodeURIComponent al link risolto - è già pronto per l'uso
-                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${resolved}`;
+                  if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
+                    // Passa il link Vavoo originale al proxy (NON quello risolto)
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
                     streams.push({
                       url: vavooUrl,
                       title: `${(channel as any).name} - Vavoo Live (${vavooName})`
@@ -1101,7 +1103,7 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
                     console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
                     vavooResolved = true;
                   } else {
-                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                    console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
                   }
                 } catch (vavooError) {
                   console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
@@ -1123,7 +1125,7 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
             console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
           });
           
-          console.log(`========= END TV STREAM REQUEST =========`);
+          console.log(`========= END TV STREAM REQUEST (GENERAL ENDPOINT) =========`);
           res.json({ streams });
     } else {
         // Per altri tipi (movies, series) usa il builder
@@ -1236,10 +1238,10 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
     }
 
-    // 2. Stream Vavoo dinamico (risolve in tempo reale)
+    // 2. Stream Vavoo dinamico (ottieni link originale per proxy)
     if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
         try {
-            console.log(`[TV] Trying Vavoo resolution for ${id}`);
+            console.log(`[TV] Trying Vavoo original link for ${id}`);
             console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
             console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
             
@@ -1248,14 +1250,14 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
             for (const vavooName of (channel as any).vavooNames) {
                 if (vavooResolved) break; // Esce al primo successo
                 
-                console.log(`[TV] Trying to resolve Vavoo channel: ${vavooName}`);
+                console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
                 try {
-                  const resolved = await resolveVavooChannelByName(vavooName);
-                  console.log(`[TV] Vavoo resolution result for ${vavooName}:`, resolved);
+                  const originalLink = await getVavooOriginalLink(vavooName);
+                  console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
                   
-                  if (resolved && resolved !== 'NOT_FOUND' && resolved !== 'NO_URL' && resolved !== 'RESOLVE_FAIL' && resolved !== 'ERROR') {
-                    // NON applicare encodeURIComponent al link risolto - è già pronto per l'uso
-                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${resolved}`;
+                  if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
+                    // Passa il link Vavoo originale al proxy (NON quello risolto)
+                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
                     streams.push({
                       url: vavooUrl,
                       title: `${(channel as any).name} - Vavoo Live (${vavooName})`
@@ -1263,7 +1265,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
                     console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
                     vavooResolved = true;
                   } else {
-                    console.log(`[TV] ❌ Failed to resolve Vavoo channel: ${vavooName} (result: ${resolved})`);
+                    console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
                   }
                 } catch (vavooError) {
                   console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
