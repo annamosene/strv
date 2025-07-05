@@ -347,14 +347,14 @@ export class EPGManager {
 
     /**
      * Trova il canale EPG corrispondente a un canale TV
-     * Ora supporta anche l'array epgChannelIds direttamente nel canale TV
+     * Supporta epgChannelIds dal canale TV
      */
     public findEPGChannelId(tvChannelName: string, epgChannelIds?: string[]): string | null {
         if (!this.epgData) {
             return null;
         }
 
-        // Se abbiamo epgChannelIds specifici dal canale TV, provali prima
+        // 1. Se abbiamo epgChannelIds specifici dal canale TV, provali prima
         if (epgChannelIds && Array.isArray(epgChannelIds)) {
             for (const epgId of epgChannelIds) {
                 // Cerca match esatto nell'EPG
@@ -362,7 +362,7 @@ export class EPGManager {
                     ch.id === epgId || ch.displayName === epgId
                 );
                 if (foundChannel) {
-                    console.log(`📺 EPG Match found: ${tvChannelName} -> ${foundChannel.id} (${foundChannel.displayName})`);
+                    console.log(`📺 EPG Match found via epgChannelIds: ${tvChannelName} -> ${foundChannel.id} (${foundChannel.displayName})`);
                     return foundChannel.id;
                 }
             }
@@ -376,14 +376,14 @@ export class EPGManager {
                     
                     if (normalizedChannelId.includes(normalizedEpgId) || normalizedEpgId.includes(normalizedChannelId) ||
                         normalizedDisplayName.includes(normalizedEpgId) || normalizedEpgId.includes(normalizedDisplayName)) {
-                        console.log(`📺 EPG Partial match found: ${tvChannelName} -> ${channel.id} (${channel.displayName}) via ${epgId}`);
+                        console.log(`📺 EPG Partial match via epgChannelIds: ${tvChannelName} -> ${channel.id} (${channel.displayName}) via ${epgId}`);
                         return channel.id;
                     }
                 }
             }
         }
 
-        // Fallback: usa il nome del canale per la ricerca automatica
+        // 2. Fallback: usa il nome del canale per la ricerca automatica
         const normalizedName = tvChannelName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
 
         // Cerca match esatto
