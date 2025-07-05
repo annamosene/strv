@@ -33,7 +33,7 @@ interface AddonConfig {
 // Base manifest configuration
 const baseManifest: Manifest = {
     id: "org.stremio.vixcloud",
-    version: "2.0.1",
+    version: "4.0.1",
     name: "StreamViX",
     description: "Addon for Vixsrc and AnimeUnity streams.", 
     icon: "/public/icon.png",
@@ -692,7 +692,7 @@ function createBuilder(config: AddonConfig = {}) {
               // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
               streams.push({
                 url: staticUrl2,
-                title: `${(channel as any).name} (MPD)`
+                title: `${(channel as any).name} (MPD HD)`
               });
               console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
             } else if (mfpUrl && mfpPsw) {
@@ -707,7 +707,7 @@ function createBuilder(config: AddonConfig = {}) {
               }
               streams.push({
                 url: proxyUrl,
-                title: `${(channel as any).name} (MPD)`
+                title: `${(channel as any).name} (MPD HD)`
               });
               console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
             } else {
@@ -1327,35 +1327,35 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
           console.log(`❌ No staticUrl available for channel ${cleanId}`);
         }
 
-        // 2. Stream via staticUrl2 (seconda URL statica)
-        const staticUrl2 = (channel as any).staticUrl2;
-        if (staticUrl2) {
-          if (isFreeToAir) {
-            // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
-            streams.push({
-              url: staticUrl2,
-              title: `${(channel as any).name} (MPD)`
-            });
-            console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
-          } else if (mfpUrl && mfpPsw) {
-            // Per canali non in chiaro, usa MFP proxy
-            let proxyUrl: string;
-            if (staticUrl2.includes('.mpd')) {
-              // Per file MPD usiamo il proxy MPD
-              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-            } else {
-              // Per altri stream usiamo il proxy stream normale
-              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-            }
-            streams.push({
-              url: proxyUrl,
-              title: `${(channel as any).name} (MPD)`
-            });
-            console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
-          } else {
-            console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-          }
+            // 2. Stream via staticUrl2 (seconda URL statica)
+    const staticUrl2 = (channel as any).staticUrl2;
+    if (staticUrl2) {
+      if (isFreeToAir) {
+        // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
+        streams.push({
+          url: staticUrl2,
+          title: `${(channel as any).name} (MPD HD)`
+        });
+        console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
+      } else if (mfpUrl && mfpPsw) {
+        // Per canali non in chiaro, usa MFP proxy
+        let proxyUrl: string;
+        if (staticUrl2.includes('.mpd')) {
+          // Per file MPD usiamo il proxy MPD
+          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+        } else {
+          // Per altri stream usiamo il proxy stream normale
+          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
         }
+        streams.push({
+          url: proxyUrl,
+          title: `${(channel as any).name} (MPD HD)`
+        });
+        console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
+      } else {
+        console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+      }
+    }
 
         // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
         if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
@@ -1505,7 +1505,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
         streams.push({
           url: staticUrl2,
-          title: `${(channel as any).name} (MPD)`
+          title: `${(channel as any).name} (MPD HD)`
         });
         console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
       } else if (mfpUrl && mfpPsw) {
@@ -1520,7 +1520,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         }
         streams.push({
           url: proxyUrl,
-          title: `${(channel as any).name} (MPD)`
+          title: `${(channel as any).name} (MPD HD)`
         });
         console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
       } else {
