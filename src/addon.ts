@@ -1442,7 +1442,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       } else {
         console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
       }
-
+    }
 
     // 3. Stream Vavoo dinamico (ottieni link originale per proxy)
     if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
