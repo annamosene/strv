@@ -13,7 +13,7 @@ WORKDIR /usr/src/app
 
 # Clona il repository Git
 # Sostituisci con l'URL del tuo repository e opzionalmente un branch o tag
-ARG GIT_REPO_URL="https://github.com/qwertyuiop8899/StreamViX.git"
+ARG GIT_REPO_URL="https://github.com/qwertyuiop8899/test.git"
 ARG GIT_BRANCH="main"
 RUN git -c http.sslVerify=false clone --branch ${GIT_BRANCH} --depth 1 ${GIT_REPO_URL} .
 # Il "." alla fine clona il contenuto della repo direttamente in /usr/src/app
@@ -50,10 +50,10 @@ RUN pnpm run build
 # EXPOSE 3000 
 
 # Copia i file di configurazione e lo script Python nella directory di lavoro
-COPY config/tv_channels.json ./config/tv_channels.json
-COPY config/domains.json ./config/domains.json  
-COPY config/epg_config.json ./config/epg_config.json
-COPY vavoo_resolver.py ./vavoo_resolver.py
+#COPY config/tv_channels.json ./config/tv_channels.json
+#COPY config/domains.json ./config/domains.json  
+#COPY config/epg_config.json ./config/epg_config.json
+#COPY vavoo_resolver.py ./vavoo_resolver.py
 
 # Assicurati che vavoo_resolver.py sia eseguibile
 RUN chmod +x vavoo_resolver.py
