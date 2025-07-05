@@ -1,9 +1,13 @@
 # Scegli un'immagine Node.js di base
 FROM node:18-slim
 
-# Installa git, python3 e pip
+# Installa git, python3 e pip con le librerie necessarie
 USER root 
 RUN apt-get update && apt-get install -y git python3 python3-pip ca-certificates --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Installa le dipendenze Python direttamente
+RUN pip3 install --no-cache-dir --break-system-packages requests beautifulsoup4
+
 # Imposta la directory di lavoro nell'immagine
 WORKDIR /usr/src/app
 
@@ -13,9 +17,6 @@ ARG GIT_REPO_URL="https://github.com/qwertyuiop8899/StreamViX.git"
 ARG GIT_BRANCH="main"
 RUN git -c http.sslVerify=false clone --branch ${GIT_BRANCH} --depth 1 ${GIT_REPO_URL} .
 # Il "." alla fine clona il contenuto della repo direttamente in /usr/src/app
-
-# Installa le dipendenze Python direttamente
-RUN pip3 install --no-cache-dir --break-system-packages requests beautifulsoup4
 
 # Installa una versione specifica di pnpm per evitare problemi di compatibilità della piattaforma
 RUN npm install -g pnpm@8.15.5
@@ -27,10 +28,6 @@ RUN npm install -g pnpm@8.15.5
 # Copia package.json e pnpm-lock.yaml (questo passaggio potrebbe non essere più necessario se sono nel repo)
 # Se sono già presenti dopo il git clone, puoi ometterlo o assicurarti che i percorsi siano corretti.
 # COPY package.json pnpm-lock.yaml ./ 
-
-# Installa Python e le dipendenze per lo script Vavoo
-RUN apt-get update && apt-get install -y python3 python3-pip
-RUN pip3 install requests
 
 # Assicura che l'utente node sia proprietario della directory dell'app e del suo contenuto
 RUN chown -R node:node /usr/src/app
@@ -52,9 +49,9 @@ RUN pnpm run build
 # Non è strettamente necessario EXPOSE qui perché HF assegna la porta tramite env var
 # EXPOSE 3000 
 
-# Copia i file di configurazione e lo script Python
+# Copia i file di configurazione e lo script Python nella directory di lavoro
 COPY config/tv_channels.json ./config/tv_channels.json
-COPY config/domains.json ./config/domains.json
+COPY config/domains.json ./config/domains.json  
 COPY config/epg_config.json ./config/epg_config.json
 COPY vavoo_resolver.py ./vavoo_resolver.py
 
