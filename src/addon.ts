@@ -366,14 +366,20 @@ if (epgConfig.enabled) {
     console.log(`📺 EPG Manager inizializzato con URL: ${epgConfig.epgUrl}`);
     console.log(`📺 URL alternativi configurati: ${epgConfig.alternativeUrls?.length || 0}`);
     
-    // Avvia aggiornamento EPG in background
-    epgManager.updateEPG().then(success => {
-        if (success) {
-            console.log(`✅ EPG aggiornato con successo all'avvio`);
-        } else {
-            console.log(`⚠️ Aggiornamento EPG fallito all'avvio, verrà ritentato al prossimo utilizzo`);
+    // Avvia aggiornamento EPG in background senza bloccare l'avvio
+    setTimeout(() => {
+        if (epgManager) {
+            epgManager.updateEPG().then(success => {
+                if (success) {
+                    console.log(`✅ EPG aggiornato con successo in background`);
+                } else {
+                    console.log(`⚠️ Aggiornamento EPG fallito in background, verrà ritentato al prossimo utilizzo`);
+                }
+            }).catch(error => {
+                console.error(`❌ Errore durante l'aggiornamento EPG in background:`, error);
+            });
         }
-    });
+    }, 1000); // Ritarda di 1 secondo per permettere al server di avviarsi
 }
 
 // Funzione per determinare se un canale è in chiaro (da rai1 a rai4k)
@@ -516,10 +522,11 @@ function createBuilder(config: AddonConfig = {}) {
           console.log(`📺 No genre filter, showing all ${tvChannels.length} channels`);
         }
         
-        // Aggiungi prefisso tv: agli ID
+        // Aggiungi prefisso tv: agli ID e posterShape landscape
         const tvChannelsWithPrefix = filteredChannels.map((channel: any) => ({
           ...channel,
-          id: `tv:${channel.id}` // Aggiungi prefisso tv:
+          id: `tv:${channel.id}`, // Aggiungi prefisso tv:
+          posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
         }));
         console.log(`✅ Returning ${tvChannelsWithPrefix.length} TV channels for catalog ${id} with prefixed IDs`);
         return Promise.resolve({ metas: tvChannelsWithPrefix });
@@ -541,7 +548,8 @@ function createBuilder(config: AddonConfig = {}) {
           // Prepara i metadati base
           const metaWithPrefix = {
             ...channel,
-            id: `tv:${channel.id}`
+            id: `tv:${channel.id}`,
+            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
           };
 
           // Aggiungi informazioni EPG se disponibili
@@ -707,10 +715,10 @@ function createBuilder(config: AddonConfig = {}) {
             }
           }
 
-          // 3. Stream Vavoo dinamico (ottieni link originale per proxy)
-          if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+          // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
+          if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
             try {
-              console.log(`[TV] Trying Vavoo original link for ${id}`);
+              console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
               console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
               console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
               
@@ -747,6 +755,8 @@ function createBuilder(config: AddonConfig = {}) {
             } catch (error) {
               console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
             }
+          } else if (isFreeToAir) {
+            console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
           } else {
             console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
           }
@@ -1109,10 +1119,11 @@ app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
             console.log(`📺 No genre filter, showing all ${tvChannels.length} channels`);
         }
         
-        // Aggiungi prefisso tv: agli ID
+        // Aggiungi prefisso tv: agli ID e posterShape landscape
         const tvChannelsWithPrefix = filteredChannels.map((channel: any) => ({
             ...channel,
-            id: `tv:${channel.id}` // Aggiungi prefisso tv:
+            id: `tv:${channel.id}`, // Aggiungi prefisso tv:
+            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
         }));
         console.log(`✅ Returning ${tvChannelsWithPrefix.length} TV channels for catalog ${id} with prefixed IDs`);
         res.json({ metas: tvChannelsWithPrefix });
@@ -1143,7 +1154,8 @@ app.get('/:config/meta/:type/:id.json', async (req: Request, res: Response) => {
             // Prepara i metadati base
             const metaWithPrefix = {
                 ...channel,
-                id: `tv:${channel.id}`
+                id: `tv:${channel.id}`,
+                posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
             };
 
             // Aggiungi informazioni EPG se disponibili
@@ -1232,7 +1244,8 @@ app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
         // Mantieni l'ID originale con prefisso nella risposta
         const metaWithPrefix = {
             ...channel,
-            id: `tv:${channel.id}`
+            id: `tv:${channel.id}`,
+            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
         };
         res.json({ meta: metaWithPrefix });
     } else {
@@ -1346,10 +1359,10 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
           }
         }
 
-        // 3. Stream Vavoo dinamico (ottieni link originale per proxy)
-        if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
+        if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
           try {
-            console.log(`[TV] Trying Vavoo original link for ${id}`);
+            console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
             console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
             console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
             
@@ -1386,6 +1399,8 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
           } catch (error) {
             console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
           }
+        } else if (isFreeToAir) {
+          console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
         } else {
           console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
         }
@@ -1517,10 +1532,10 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       }
     }
 
-    // 3. Stream Vavoo dinamico (ottieni link originale per proxy)
-    if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
+        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - SOLO per canali NON in chiaro
+    if (!isFreeToAir && tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
         try {
-            console.log(`[TV] Trying Vavoo original link for ${id}`);
+            console.log(`[TV] Trying Vavoo original link for ${id} (non-free-to-air channel)`);
             console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
             console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
             
@@ -1549,14 +1564,16 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
                 } catch (vavooError) {
                   console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
                 }
-              }
-              
-              if (!vavooResolved) {
+            }
+            
+            if (!vavooResolved) {
                 console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
-              }
+            }
         } catch (error) {
-          console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
+            console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
         }
+    } else if (isFreeToAir) {
+        console.log(`[TV] ⏭️ Skipping Vavoo for free-to-air channel ${id} - using only direct streams`);
     } else {
         console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
     }
@@ -1799,7 +1816,8 @@ app.get('*/meta/*', (req: Request, res: Response) => {
                 console.log(`✅ Found channel via fallback: ${channel.name}`);
                 const metaWithPrefix = {
                     ...channel,
-                    id: `tv:${channel.id}`
+                    id: `tv:${channel.id}`,
+                    posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
                 };
                 res.json({ meta: metaWithPrefix });
                 return;
