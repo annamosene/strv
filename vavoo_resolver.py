@@ -1,228 +1,346 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-vavoo_resolver.py
-Script unico: dato il nome del canale, trova il link Vavoo e lo risolve in tempo reale.
+Server di debug per verificare le richieste di Stremio agli endpoints TV
 """
-import sys
-import requests
+
 import json
 import os
-import re
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs, unquote
+import time
+from typing import Dict, Any
 
-def get_domain(service):
-    config_path = os.path.join(os.path.dirname(__file__), 'config/domains.json')
-    with open(config_path, 'r') as f:
-        domains = json.load(f)
-    return domains.get(service)
-
-VAVOO_DOMAIN = get_domain("vavoo")
-
-def getAuthSignature():
-    """Funzione che replica esattamente quella dell'addon utils.py"""
-    headers = {
-        "user-agent": "okhttp/4.11.0",
-        "accept": "application/json",
-        "content-type": "application/json; charset=utf-8",
-        "content-length": "1106",
-        "accept-encoding": "gzip"
-    }
-    data = {
-        "token": "tosFwQCJMS8qrW_AjLoHPQ41646J5dRNha6ZWHnijoYQQQoADQoXYSo7ki7O5-CsgN4CH0uRk6EEoJ0728ar9scCRQW3ZkbfrPfeCXW2VgopSW2FWDqPOoVYIuVPAOnXCZ5g",
-        "reason": "app-blur",
-        "locale": "de",
-        "theme": "dark",
-        "metadata": {
-            "device": {
-                "type": "Handset",
-                "brand": "google",
-                "model": "Nexus",
-                "name": "21081111RG",
-                "uniqueId": "d10e5d99ab665233"
-            },
-            "os": {
-                "name": "android",
-                "version": "7.1.2",
-                "abis": ["arm64-v8a", "armeabi-v7a", "armeabi"],
-                "host": "android"
-            },
-            "app": {
-                "platform": "android",
-                "version": "3.1.20",
-                "buildId": "289515000",
-                "engine": "hbc85",
-                "signatures": ["6e8a975e3cbf07d5de823a760d4c2547f86c1403105020adee5de67ac510999e"],
-                "installer": "app.revanced.manager.flutter"
-            },
-            "version": {
-                "package": "tv.vavoo.app",
-                "binary": "3.1.20",
-                "js": "3.1.20"
-            }
-        },
-        "appFocusTime": 0,
-        "playerActive": False,
-        "playDuration": 0,
-        "devMode": False,
-        "hasAddon": True,
-        "castConnected": False,
-        "package": "tv.vavoo.app",
-        "version": "3.1.20",
-        "process": "app",
-        "firstAppStart": 1743962904623,
-        "lastAppStart": 1743962904623,
-        "ipLocation": "",
-        "adblockEnabled": True,
-        "proxy": {
-            "supported": ["ss", "openvpn"],
-            "engine": "ss",
-            "ssVersion": 1,
-            "enabled": True,
-            "autoServer": True,
-            "id": "pl-waw"
-        },
-        "iap": {
-            "supported": False
-        }
-    }
-    try:
-        resp = requests.post("https://www.vavoo.tv/api/app/ping", json=data, headers=headers, timeout=10)
-        resp.raise_for_status()
-        return resp.json().get("addonSig")
-    except Exception as e:
-        print(f"Errore nel recupero della signature: {e}", file=sys.stderr)
-        return None
-
-def get_channels():
-    signature = getAuthSignature()
-    if not signature:
-        print("[DEBUG] Failed to get signature for channels", file=sys.stderr)
-        return []
+class DebugRequestHandler(BaseHTTPRequestHandler):
     
-    headers = {
-        "user-agent": "okhttp/4.11.0",
-        "accept": "application/json",
-        "content-type": "application/json; charset=utf-8",
-        "accept-encoding": "gzip",
-        "mediahubmx-signature": signature
-    }
-    all_channels = []
-    for group in ["Italy"]:
-        cursor = 0
-        while True:
-            data = {
-                "language": "de",
-                "region": "AT",
-                "catalogId": "iptv",
-                "id": "iptv",
-                "adult": False,
-                "search": "",
-                "sort": "name",
-                "filter": {"group": group},
-                "cursor": cursor,
-                "clientVersion": "3.0.2"
-            }
-            try:
-                resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-catalog.json", json=data, headers=headers, timeout=10)
-                resp.raise_for_status()
-                r = resp.json()
-                items = r.get("items", [])
-                all_channels.extend(items)
-                cursor = r.get("nextCursor")
-                if not cursor:
-                    break
-            except Exception as e:
-                print(f"[DEBUG] Error getting channels: {e}", file=sys.stderr)
-                break
-    return all_channels
-
-def resolve_vavoo_link(link):
-    signature = getAuthSignature()
-    if not signature:
-        print("[DEBUG] Failed to get signature for resolution", file=sys.stderr)
-        return None
+    def log_request_details(self, method: str):
+        """Log dettagliato di ogni richiesta"""
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        print(f"\n🌐 [{timestamp}] INCOMING {method} REQUEST:")
+        print(f"   URL: {self.path}")
+        print(f"   Headers: {dict(self.headers)}")
+        print(f"   Client: {self.client_address}")
+        print(f"   User-Agent: {self.headers.get('User-Agent', 'N/A')}")
+        print(f"────────────────────────────────────────────────────────────")
+    
+    def send_json_response(self, data: Dict[str, Any], status_code: int = 200):
+        """Invia una risposta JSON"""
+        response_json = json.dumps(data, indent=2)
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         
-    headers = {
-        "user-agent": "MediaHubMX/2",
-        "accept": "application/json",
-        "content-type": "application/json; charset=utf-8",
-        "content-length": "115",
-        "accept-encoding": "gzip",
-        "mediahubmx-signature": signature
-    }
-    data = {
-        "language": "de",
-        "region": "AT",
-        "url": link,
-        "clientVersion": "3.0.2"
-    }
-    try:
-        resp = requests.post(f"https://{VAVOO_DOMAIN}/mediahubmx-resolve.json", json=data, headers=headers, timeout=10)
-        resp.raise_for_status()
-        result = resp.json()
-        if isinstance(result, list) and result and result[0].get("url"):
-            return result[0]["url"]
-        elif isinstance(result, dict) and result.get("url"):
-            return result["url"]
-        else:
-            print(f"[DEBUG] Unexpected response format: {result}", file=sys.stderr)
-            return None
-    except Exception as e:
-        print(f"[DEBUG] Error resolving link: {e}", file=sys.stderr)
-        return None
+        print(f"📤 [{timestamp}] RESPONSE:")
+        print(f"   Status: {status_code}")
+        print(f"   Body: {response_json[:500]}{'...' if len(response_json) > 500 else ''}")
+        print(f"════════════════════════════════════════════════════════════\n")
+        
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.end_headers()
+        self.wfile.write(response_json.encode('utf-8'))
+    
+    def load_tv_channels(self):
+        """Carica i canali TV"""
+        try:
+            with open('config/tv_channels.json', 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"❌ Error loading TV channels: {e}")
+            return []
+    
+    def get_manifest(self, config_str: str = ""):
+        """Genera il manifest dell'addon"""
+        return {
+            "id": f"org.streamvix.debug{f'.{config_str}' if config_str else ''}",
+            "name": "StreamViX TV Debug",
+            "description": "Debug addon for TV channels",
+            "version": "1.0.0",
+            "catalogs": [
+                {
+                    "type": "tv",
+                    "id": "tv_channels",
+                    "name": "TV Channels (Debug)"
+                }
+            ],
+            "resources": ["catalog", "meta", "stream"],
+            "types": ["tv"],
+            "idPrefixes": ["tv:"]
+        }
+    
+    def get_catalog(self, type_param: str, id_param: str):
+        """Genera il catalogo TV"""
+        if type_param == "tv" and id_param == "tv_channels":
+            tv_channels = self.load_tv_channels()
+            metas = []
+            
+            for channel in tv_channels:
+                meta = {
+                    "id": f"tv:{channel['id']}",
+                    "type": "tv",
+                    "name": channel["name"],
+                    "poster": channel.get("logo", "https://via.placeholder.com/300x450/0066cc/ffffff?text=TV"),
+                    "description": f"Live TV channel: {channel['name']}",
+                    "genres": ["Live TV"]
+                }
+                metas.append(meta)
+            
+            return {"metas": metas}
+        
+        return {"metas": []}
+    
+    def get_meta(self, type_param: str, id_param: str):
+        """Genera metadata per un canale specifico"""
+        print(f"🔍 META REQUEST: type={type_param}, id={id_param}")
+        
+        if type_param == "tv" and id_param.startswith("tv:"):
+            channel_id = id_param.replace("tv:", "")
+            tv_channels = self.load_tv_channels()
+            
+            channel = next((c for c in tv_channels if c["id"] == channel_id), None)
+            if channel:
+                meta = {
+                    "id": id_param,
+                    "type": "tv",
+                    "name": channel["name"],
+                    "poster": channel.get("logo", "https://via.placeholder.com/300x450/0066cc/ffffff?text=TV"),
+                    "description": f"Live TV channel: {channel['name']}",
+                    "genres": ["Live TV"],
+                    "runtime": "Live",
+                    "year": 2024
+                }
+                return {"meta": meta}
+        
+        print(f"❌ No meta found for {type_param}:{id_param}")
+        return {"meta": None}
+    
+    def get_streams(self, type_param: str, id_param: str, config_str: str = ""):
+        """Genera stream per un canale specifico"""
+        print(f"🎬 STREAM REQUEST: type={type_param}, id={id_param}")
+        if config_str:
+            print(f"🔧 Config string: {config_str}")
+        
+        if type_param == "tv":
+            # Gestisce sia "tv:rai1" che "rai1"
+            channel_id = id_param.replace("tv:", "") if id_param.startswith("tv:") else id_param
+            tv_channels = self.load_tv_channels()
+            
+            channel = next((c for c in tv_channels if c["id"] == channel_id), None)
+            if channel:
+                streams = []
+                
+                # Stream principale
+                if channel.get("staticUrl"):
+                    stream = {
+                        "url": channel["staticUrl"],
+                        "title": f"📺 {channel['name']} (Direct)",
+                        "description": "Direct stream URL"
+                    }
+                    streams.append(stream)
+                
+                # Se c'è una configurazione, aggiungi stream MFP
+                if config_str and channel.get("staticUrl"):
+                    try:
+                        import base64
+                        decoded_config = base64.b64decode(config_str).decode('utf-8')
+                        config = json.loads(decoded_config)
+                        
+                        # Estrai configurazione MFP corretta - supporta entrambi i formati
+                        # Formato 1: {"config": {"baseUrl": "..."}, "apiPassword": "..."}
+                        # Formato 2: {"mfpProxyUrl": "...", "mfpProxyPassword": "..."}
+                        
+                        mfp_url = None
+                        mfp_password = None
+                        
+                        # Prova formato 1 (nested config)
+                        if "config" in config and "apiPassword" in config:
+                            mfp_config = config.get("config", {})
+                            mfp_url = mfp_config.get("baseUrl")
+                            mfp_password = config.get("apiPassword")
+                            print(f"🔧 Using nested config format: baseUrl={mfp_url}, apiPassword={mfp_password}")
+                        
+                        # Prova formato 2 (flat config)
+                        elif "mfpProxyUrl" in config:
+                            mfp_url = config.get("mfpProxyUrl")
+                            mfp_password = config.get("mfpProxyPassword")
+                            print(f"🔧 Using flat config format: mfpProxyUrl={mfp_url}, mfpProxyPassword={mfp_password}")
+                        
+                        # Fallback ai nomi alternativi
+                        else:
+                            mfp_url = config.get("mediaFlowProxyUrl")
+                            mfp_password = config.get("mediaFlowProxyPassword")
+                            print(f"🔧 Using fallback config format: mediaFlowProxyUrl={mfp_url}, mediaFlowProxyPassword={mfp_password}")
+                        
+                        print(f"🔧 Final MFP config: url={mfp_url}, password={'SET' if mfp_password else 'NOT SET'}")
+                        
+                        if mfp_url and mfp_password:
+                            # Test dell'URL parsing per separare key_id e key
+                            static_url = channel["staticUrl"]
+                            print(f"🔧 Original URL: {static_url}")
+                            
+                            try:
+                                from urllib.parse import urlparse, parse_qs
+                                parsed = urlparse(static_url)
+                                base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                                query_params = parse_qs(parsed.query)
+                                
+                                print(f"🔧 Base URL: {base_url}")
+                                print(f"🔧 Query params: {query_params}")
+                                
+                                # Genera l'URL MFP con parametri separati
+                                if ".mpd" in static_url:
+                                    mfp_stream_url = f"{mfp_url}/proxy/mpd/manifest.m3u8?api_password={mfp_password}&d={base_url}"
+                                else:
+                                    mfp_stream_url = f"{mfp_url}/proxy/stream/?api_password={mfp_password}&d={base_url}"
+                                
+                                # Aggiungi key_id e key come parametri separati
+                                if "key_id" in query_params:
+                                    mfp_stream_url += f"&key_id={query_params['key_id'][0]}"
+                                if "key" in query_params:
+                                    mfp_stream_url += f"&key={query_params['key'][0]}"
+                                
+                                print(f"🔧 Generated MFP URL: {mfp_stream_url}")
+                                
+                                mfp_stream = {
+                                    "url": mfp_stream_url,
+                                    "title": f"📺 {channel['name']} (MFP Proxy - FIXED)",
+                                    "description": "MFP proxy with separated key parameters"
+                                }
+                                streams.append(mfp_stream)
+                                
+                            except Exception as e:
+                                print(f"❌ Error parsing URL: {e}")
+                        
+                    except Exception as e:
+                        print(f"❌ Error parsing config: {e}")
+                
+                # Stream di backup se disponibile
+                if channel.get("vavooNames"):
+                    backup_stream = {
+                        "url": f"https://example.com/backup/{channel_id}.m3u8",
+                        "title": f"📺 {channel['name']} (Backup)",
+                        "description": "Backup stream via Vavoo"
+                    }
+                    streams.append(backup_stream)
+                
+                print(f"✅ Returning {len(streams)} streams for {channel['name']}")
+                return {"streams": streams}
+        
+        print(f"❌ No streams found for {type_param}:{id_param}")
+        return {"streams": []}
+    
+    def do_GET(self):
+        """Gestisce le richieste GET"""
+        self.log_request_details("GET")
+        
+        # Parse URL
+        parsed_url = urlparse(self.path)
+        path_parts = [p for p in parsed_url.path.split('/') if p]
+        
+        try:
+            # Manifest
+            if len(path_parts) == 1 and path_parts[0] == "manifest.json":
+                response = self.get_manifest()
+                self.send_json_response(response)
+                return
+            
+            # Manifest con config
+            if len(path_parts) == 2 and path_parts[1] == "manifest.json":
+                config_str = path_parts[0]
+                response = self.get_manifest(config_str)
+                self.send_json_response(response)
+                return
+            
+            # Catalog
+            if "catalog" in path_parts:
+                catalog_idx = path_parts.index("catalog")
+                if len(path_parts) > catalog_idx + 2:
+                    type_param = path_parts[catalog_idx + 1]
+                    id_param = path_parts[catalog_idx + 2].replace(".json", "")
+                    response = self.get_catalog(type_param, id_param)
+                    self.send_json_response(response)
+                    return
+            
+            # Meta
+            if "meta" in path_parts:
+                meta_idx = path_parts.index("meta")
+                if len(path_parts) > meta_idx + 2:
+                    type_param = path_parts[meta_idx + 1]
+                    id_param = path_parts[meta_idx + 2].replace(".json", "")
+                    response = self.get_meta(type_param, id_param)
+                    self.send_json_response(response)
+                    return
+            
+            # Stream  
+            if "stream" in path_parts:
+                stream_idx = path_parts.index("stream")
+                if len(path_parts) > stream_idx + 2:
+                    # Controlla se c'è una configurazione Base64 all'inizio
+                    config_str = ""
+                    if stream_idx > 0:
+                        config_str = path_parts[0]  # Prima parte è la configurazione Base64
+                    
+                    type_param = path_parts[stream_idx + 1]
+                    id_param = path_parts[stream_idx + 2].replace(".json", "")
+                    response = self.get_streams(type_param, id_param, config_str)
+                    self.send_json_response(response)
+                    return
+            
+            # 404 per tutti gli altri path
+            print(f"❌ Unknown path: {self.path}")
+            self.send_json_response({"error": "Not found"}, 404)
+            
+        except Exception as e:
+            print(f"❌ Error handling request: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+    
+    def do_OPTIONS(self):
+        """Gestisce le richieste OPTIONS (CORS preflight)"""
+        self.log_request_details("OPTIONS")
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.end_headers()
 
-def normalize_vavoo_name(name):
-    # Rimuove suffisso tipo ' .c', ' .a', ' .b' alla fine
-    name = name.strip()
-    name = re.sub(r'\s+\.[a-zA-Z]$', '', name)
-    return name.upper()
+def main():
+    print("🚀 Starting StreamViX TV Debug Server...")
+    print("📺 Loading TV channels...")
+    
+    # Verifica che i file esistano
+    if not os.path.exists('config/tv_channels.json'):
+        print("❌ config/tv_channels.json not found!")
+        return
+    
+    # Carica e mostra i canali
+    try:
+        with open('config/tv_channels.json', 'r', encoding='utf-8') as f:
+            tv_channels = json.load(f)
+        print(f"✅ Loaded {len(tv_channels)} TV channels:")
+        for channel in tv_channels:
+            print(f"   - {channel['name']} (id: {channel['id']})")
+    except Exception as e:
+        print(f"❌ Error loading channels: {e}")
+        return
+    
+    # Avvia il server
+    port = 8888
+    server = HTTPServer(('0.0.0.0', port), DebugRequestHandler)
+    print(f"\n🌐 Server running on http://localhost:{port}")
+    print(f"📱 Add this URL in Stremio: http://localhost:{port}/manifest.json")
+    print(f"🔍 All requests will be logged in detail!")
+    print(f"\n📋 Available endpoints:")
+    print(f"   - Manifest: http://localhost:{port}/manifest.json")
+    print(f"   - Catalog:  http://localhost:{port}/catalog/tv/tv_channels.json")
+    print(f"   - Meta:     http://localhost:{port}/meta/tv/tv:CHANNEL_ID.json")
+    print(f"   - Stream:   http://localhost:{port}/stream/tv/tv:CHANNEL_ID.json")
+    print(f"\n🛑 Press Ctrl+C to stop the server")
+    print("=" * 60)
+    
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print(f"\n🛑 Server stopped")
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        print("Usage: python3 vavoo_resolver.py <channel_name>", file=sys.stderr)
-        sys.exit(1)
-    
-    wanted = normalize_vavoo_name(sys.argv[1])
-    print(f"[DEBUG] Looking for channel: {wanted}", file=sys.stderr)
-    
-    try:
-        channels = get_channels()
-        print(f"[DEBUG] Found {len(channels)} total channels", file=sys.stderr)
-        
-        found = None
-        for ch in channels:
-            chname = normalize_vavoo_name(ch.get('name', ''))
-            if chname == wanted:
-                found = ch
-                print(f"[DEBUG] Found matching channel: {ch.get('name')}", file=sys.stderr)
-                break
-        
-        if not found:
-            print(f"[DEBUG] Channel '{wanted}' not found in {len(channels)} channels", file=sys.stderr)
-            # Debug: mostra alcuni nomi di canali per aiutare
-            sample_names = [normalize_vavoo_name(ch.get('name', '')) for ch in channels[:10]]
-            print(f"[DEBUG] Sample channel names: {sample_names}", file=sys.stderr)
-            print("NOT_FOUND", file=sys.stderr)
-            sys.exit(2)
-            
-        url = found.get('url')
-        if not url:
-            print("[DEBUG] No URL found for channel", file=sys.stderr)
-            print("NO_URL", file=sys.stderr)
-            sys.exit(3)
-            
-        print(f"[DEBUG] Resolving URL: {url}", file=sys.stderr)
-        resolved = resolve_vavoo_link(url)
-        if resolved:
-            print(resolved)  # Questo è l'output che viene letto
-            sys.exit(0)
-        else:
-            print("[DEBUG] Failed to resolve URL", file=sys.stderr)
-            print("RESOLVE_FAIL", file=sys.stderr)
-            sys.exit(4)
-            
-    except Exception as e:
-        print(f"[DEBUG] Exception: {str(e)}", file=sys.stderr)
-        print("ERROR", file=sys.stderr)
-        sys.exit(5) 
+    main()
