@@ -3,60 +3,1372 @@
     "id": "rai1",
     "type": "tv",
     "name": "Rai 1",
-    "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai1.png",
     "description": "Rai 1 - Canale pubblico italiano",
-    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["RAI 1"],
-    "epgChannelIds": ["Rai 1.it", "rai1.rai.it", "Rai 1", "RAI1", "skyuno.it"]
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI 1"
+    ],
+    "epgChannelIds": [
+      "Rai1.it"
+    ]
+  },
+  {
+    "id": "rai2",
+    "type": "tv",
+    "name": "Rai 2",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai2.png",
+    "description": "Rai 2 - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI 2"
+    ],
+    "epgChannelIds": [
+      "Rai2.it"
+    ]
+  },
+  {
+    "id": "rai3",
+    "type": "tv",
+    "name": "Rai 3",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai3.png",
+    "description": "Rai 3 - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI 3"
+    ],
+    "epgChannelIds": [
+      "Rai3.it"
+    ]
+  },
+  {
+    "id": "rete4",
+    "type": "tv",
+    "name": "Rete 4",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rete4.png",
+    "description": "Rete 4 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8",
+    "vavooNames": [
+      "RETE 4"
+    ],
+    "epgChannelIds": [
+      "Rete4.it"
+    ]
   },
   {
     "id": "canale5",
     "type": "tv",
     "name": "Canale 5",
-    "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/canale5.png",
     "description": "Canale 5 - Mediaset",
-    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["CANALE5", "CANALE 5"],
-    "epgChannelIds": ["canalecinque.mediaset.it", "canale5.mediaset.it", "Canale 5", "CANALE5"]
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8",
+    "vavooNames": [
+      "CANALE 5"
+    ],
+    "epgChannelIds": [
+      "Canale5.it"
+    ]
+  },
+  {
+    "id": "italia1",
+    "type": "tv",
+    "name": "Italia 1",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/italia1.png",
+    "description": "Italia 1 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8",
+    "vavooNames": [
+      "ITALIA 1"
+    ],
+    "epgChannelIds": [
+      "Italia1.it"
+    ]
+  },
+  {
+    "id": "la7",
+    "type": "tv",
+    "name": "LA7",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la7.png",
+    "description": "LA7 - Canale privato italiano",
+    "staticUrl": "https://d15umi5iaezxgx.cloudfront.net/LA7/CLN/HLS-B/Live_1280x720_.m3u8",
+    "vavooNames": [
+      "LA7"
+    ],
+    "epgChannelIds": [
+      "La7.it"
+    ]
+  },
+  {
+    "id": "tv8",
+    "type": "tv",
+    "name": "TV8",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tv8.png",
+    "description": "TV8 - Sky",
+    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "vavooNames": [
+      "TV8"
+    ],
+    "epgChannelIds": [
+      "Tv8.it"
+    ]
+  },
+  {
+    "id": "nove",
+    "type": "tv",
+    "name": "NOVE",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/nove.png",
+    "description": "NOVE - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c1-samsung-it-1831.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-nove-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "NOVE"
+    ],
+    "epgChannelIds": [
+      "Nove.it"
+    ]
+  },
+  {
+    "id": "20mediaset",
+    "type": "tv",
+    "name": "20 Mediaset",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/20mediaset.png",
+    "description": "20 Mediaset - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8",
+    "vavooNames": [
+      "20 MEDIASET"
+    ],
+    "epgChannelIds": [
+      "20Mediaset.it"
+    ]
+  },
+  {
+    "id": "rai4",
+    "type": "tv",
+    "name": "Rai 4",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai4.png",
+    "description": "Rai 4 - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI 4"
+    ],
+    "epgChannelIds": [
+      "Rai4.it"
+    ]
+  },
+  {
+    "id": "iris",
+    "type": "tv",
+    "name": "Iris",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/iris.png",
+    "description": "Iris - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8",
+    "vavooNames": [
+      "IRIS"
+    ],
+    "epgChannelIds": [
+      "Iris.it"
+    ]
+  },
+  {
+    "id": "rai5",
+    "type": "tv",
+    "name": "Rai 5",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai5.png",
+    "description": "Rai 5 - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI 5"
+    ],
+    "epgChannelIds": [
+      "Rai5.it"
+    ]
+  },
+  {
+    "id": "raimovie",
+    "type": "tv",
+    "name": "Rai Movie",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raimovie.png",
+    "description": "Rai Movie - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI MOVIE"
+    ],
+    "epgChannelIds": [
+      "RaiMovie.it"
+    ]
+  },
+  {
+    "id": "raipremium",
+    "type": "tv",
+    "name": "Rai Premium",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raipremium.png",
+    "description": "Rai Premium - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI PREMIUM"
+    ],
+    "epgChannelIds": [
+      "RaiPremium.it"
+    ]
+  },
+  {
+    "id": "cielo",
+    "type": "tv",
+    "name": "Cielo",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cielo.png",
+    "description": "Cielo - Sky",
+    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "vavooNames": [
+      "CIELO"
+    ],
+    "epgChannelIds": [
+      "CieloTv.it"
+    ]
+  },
+  {
+    "id": "twentyseven",
+    "type": "tv",
+    "name": "Twenty Seven",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/twentyseven.png",
+    "description": "Twenty Seven - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ts/ts-clr.isml/index.m3u8",
+    "vavooNames": [
+      "TWENTY SEVEN"
+    ],
+    "epgChannelIds": [
+      "TwentySeven.it"
+    ]
+  },
+  {
+    "id": "tv2000",
+    "type": "tv",
+    "name": "TV2000",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tv2000.png",
+    "description": "TV2000 - Canale religioso",
+    "staticUrl": "https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8",
+    "vavooNames": [
+      "TV2000"
+    ],
+    "epgChannelIds": [
+      "TV2000.it"
+    ]
+  },
+  {
+    "id": "la7d",
+    "type": "tv",
+    "name": "LA7d",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la7d.png",
+    "description": "LA7d - Canale privato italiano",
+    "staticUrl": "https://d15umi5iaezxgx.cloudfront.net/LA7D/CLN/HLS-B/Live_1280x720_.m3u8",
+    "vavooNames": [
+      "LA7D"
+    ],
+    "epgChannelIds": [
+      "LA7D.it"
+    ]
+  },
+  {
+    "id": "la5",
+    "type": "tv",
+    "name": "La 5",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la5.png",
+    "description": "La 5 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8",
+    "vavooNames": [
+      "LA 5"
+    ],
+    "epgChannelIds": [
+      "LA5.it"
+    ]
+  },
+  {
+    "id": "realtime",
+    "type": "tv",
+    "name": "Real Time",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/realtime.png",
+    "description": "Real Time - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c2-samsung-it-1835.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-realtime-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "REAL TIME"
+    ],
+    "epgChannelIds": [
+      "RealTime.it"
+    ]
+  },
+  {
+    "id": "qvc",
+    "type": "tv",
+    "name": "QVC",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/qvc.png",
+    "description": "QVC - Canale commerciale",
+    "staticUrl": "https://qrg.akamaized.net/hls/live/2017383/lsqvc1it/master.m3u8",
+    "vavooNames": [
+      "QVC"
+    ],
+    "epgChannelIds": [
+      "QVC.it"
+    ]
+  },
+  {
+    "id": "foodnetwork",
+    "type": "tv",
+    "name": "Food Network",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/foodnetwork.png",
+    "description": "Food Network - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c3-samsung-it-1836.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-foodnetwork-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "FOOD NETWORK"
+    ],
+    "epgChannelIds": [
+      "FoodNetwork.it"
+    ]
+  },
+  {
+    "id": "cine34",
+    "type": "tv",
+    "name": "Cine34",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cine34.png",
+    "description": "Cine34 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8",
+    "vavooNames": [
+      "CINE34"
+    ],
+    "epgChannelIds": [
+      "Cine34.it"
+    ]
+  },
+  {
+    "id": "focus",
+    "type": "tv",
+    "name": "FOCUS",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/focus.png",
+    "description": "FOCUS - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8",
+    "vavooNames": [
+      "FOCUS"
+    ],
+    "epgChannelIds": [
+      "Focus.it"
+    ]
+  },
+  {
+    "id": "rtl1025tv",
+    "type": "tv",
+    "name": "RTL 102.5",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rtl1025tv.png",
+    "description": "RTL 102.5 - Canale radio-TV",
+    "staticUrl": "https://streamcdng9-dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/chunklist_b2816000.m3u8",
+    "vavooNames": [
+      "RTL 102.5"
+    ],
+    "epgChannelIds": [
+      "RTL102.5TV.it"
+    ]
+  },
+  {
+    "id": "warnertv",
+    "type": "tv",
+    "name": "Warner TV",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/warnertv.png",
+    "description": "Warner TV - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c4-samsung-it-1837.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-warnertv-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "WARNER TV"
+    ],
+    "epgChannelIds": [
+      "WarnerTV.it"
+    ]
+  },
+  {
+    "id": "giallo",
+    "type": "tv",
+    "name": "Giallo",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/giallo.png",
+    "description": "Giallo - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c5-samsung-it-1838.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-giallo-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "GIALLO"
+    ],
+    "epgChannelIds": [
+      "GialloTV.it"
+    ]
+  },
+  {
+    "id": "topcrime",
+    "type": "tv",
+    "name": "Top Crime",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/topcrime.png",
+    "description": "Top Crime - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8",
+    "vavooNames": [
+      "TOP CRIME"
+    ],
+    "epgChannelIds": [
+      "TopCrime.it"
+    ]
+  },
+  {
+    "id": "boing",
+    "type": "tv",
+    "name": "Boing",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/boing.png",
+    "description": "Boing - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8",
+    "vavooNames": [
+      "BOING"
+    ],
+    "epgChannelIds": [
+      "Boing.it"
+    ]
+  },
+  {
+    "id": "k2",
+    "type": "tv",
+    "name": "K2",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/k2.png",
+    "description": "K2 - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c6-samsung-it-1839.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-k2-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "K2"
+    ],
+    "epgChannelIds": [
+      "K2.it"
+    ]
+  },
+  {
+    "id": "raigulp",
+    "type": "tv",
+    "name": "Rai Gulp",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raigulp.png",
+    "description": "Rai Gulp - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI GULP"
+    ],
+    "epgChannelIds": [
+      "RaiGulp.it"
+    ]
+  },
+  {
+    "id": "raiyoyo",
+    "type": "tv",
+    "name": "Rai Yoyo",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raiyoyo.png",
+    "description": "Rai Yoyo - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI YOYO"
+    ],
+    "epgChannelIds": [
+      "RaiYoyo.it"
+    ]
+  },
+  {
+    "id": "frisbee",
+    "type": "tv",
+    "name": "Frisbee",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/frisbee.png",
+    "description": "Frisbee - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c7-samsung-it-1840.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-frisbee-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "FRISBEE"
+    ],
+    "epgChannelIds": [
+      "Frisbee.it"
+    ]
+  },
+  {
+    "id": "cartoonito",
+    "type": "tv",
+    "name": "Cartoonito",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cartoonito.png",
+    "description": "Cartoonito - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8",
+    "vavooNames": [
+      "CARTOONITO"
+    ],
+    "epgChannelIds": [
+      "Cartoonito.it"
+    ]
+  },
+  {
+    "id": "super",
+    "type": "tv",
+    "name": "Super!",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/super.png",
+    "description": "Super! - Canale gratuito",
+    "staticUrl": "https://vimnitaly.akamaized.net/hls/live/2094034/super/master.m3u8",
+    "vavooNames": [
+      "SUPER"
+    ],
+    "epgChannelIds": [
+      "Super.it"
+    ]
+  },
+  {
+    "id": "rainews24",
+    "type": "tv",
+    "name": "Rai News 24",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rainews24.png",
+    "description": "Rai News 24 - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI NEWS 24"
+    ],
+    "epgChannelIds": [
+      "RaiNews24.it"
+    ]
+  },
+  {
+    "id": "italia2",
+    "type": "tv",
+    "name": "Italia 2",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/italia2.png",
+    "description": "Italia 2 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8",
+    "vavooNames": [
+      "ITALIA 2"
+    ],
+    "epgChannelIds": [
+      "Italia2.it"
+    ]
+  },
+  {
+    "id": "skytg24",
+    "type": "tv",
+    "name": "Sky TG24",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/skytg24.png",
+    "description": "Sky TG24 - Sky",
+    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8?hdnts=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "vavooNames": [
+      "SKY TG24"
+    ],
+    "epgChannelIds": [
+      "SkyTG24.it"
+    ]
+  },
+  {
+    "id": "tgcom24",
+    "type": "tv",
+    "name": "TGCOM 24",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tgcom24.png",
+    "description": "TGCOM 24 - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8",
+    "vavooNames": [
+      "TGCOM 24"
+    ],
+    "epgChannelIds": [
+      "TGCom24.it"
+    ]
+  },
+  {
+    "id": "dmax",
+    "type": "tv",
+    "name": "DMAX",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/dmax.png",
+    "description": "DMAX - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c8-samsung-it-1841.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-dmax-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "DMAX"
+    ],
+    "epgChannelIds": [
+      "DMAX.it"
+    ]
+  },
+  {
+    "id": "raistoria",
+    "type": "tv",
+    "name": "Rai Storia",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raistoria.png",
+    "description": "Rai Storia - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI STORIA"
+    ],
+    "epgChannelIds": [
+      "RaiStoria.it"
+    ]
+  },
+  {
+    "id": "mediasetextra",
+    "type": "tv",
+    "name": "Mediaset Extra",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/mediasetextra.png",
+    "description": "Mediaset Extra - Mediaset",
+    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8",
+    "vavooNames": [
+      "MEDIASET EXTRA"
+    ],
+    "epgChannelIds": [
+      "MediasetExtra.it"
+    ]
+  },
+  {
+    "id": "hgtv",
+    "type": "tv",
+    "name": "HGTV - Home&Garden",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/homegardentv.png",
+    "description": "HGTV - Home&Garden - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c9-samsung-it-1842.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-hgtv-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "HGTV"
+    ],
+    "epgChannelIds": [
+      "Home&GardenTV.it"
+    ]
+  },
+  {
+    "id": "raiscuola",
+    "type": "tv",
+    "name": "Rai Scuola",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raiscuola.png",
+    "description": "Rai Scuola - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747011&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI SCUOLA"
+    ],
+    "epgChannelIds": [
+      "RaiScuola.it"
+    ]
+  },
+  {
+    "id": "raisport",
+    "type": "tv",
+    "name": "Rai Sport + HD",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raisport+hd.png",
+    "description": "Rai Sport + HD - Canale pubblico italiano",
+    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7&forceUserAgent=raiplayappletv",
+    "vavooNames": [
+      "RAI SPORT"
+    ],
+    "epgChannelIds": [
+      "RaiSport+HD.it"
+    ]
+  },
+  {
+    "id": "motortrend",
+    "type": "tv",
+    "name": "Motor Trend",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/motortrend.png",
+    "description": "Motor Trend - Warner Bros Discovery",
+    "staticUrl": "https://amg16146-wbdi-amg16146c10-samsung-it-1843.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-motortrend-samsungit/playlist.m3u8",
+    "vavooNames": [
+      "MOTOR TREND"
+    ],
+    "epgChannelIds": [
+      "MotorTrendTV.it"
+    ]
+  },
+  {
+    "id": "sportitalia",
+    "type": "tv",
+    "name": "Sportitalia",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/sportitalia.png",
+    "description": "Sportitalia - Canale sportivo",
+    "staticUrl": "https://sportitaliaamd.akamaized.net/live/Sportitalia/hls/F59D8EB0332E783633CDDE8E265844975635D24F/index.m3u8",
+    "vavooNames": [
+      "SPORTITALIA"
+    ],
+    "epgChannelIds": [
+      "Sportitalia.it"
+    ]
+  },
+  {
+    "id": "donnatv",
+    "type": "tv",
+    "name": "Donna TV",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/donnatv.png",
+    "description": "Donna TV - Canale tematico",
+    "staticUrl": "https://sportitaliaamd.akamaized.net/live/Donna_TV/hls/42EB42E58EA44362045EFEA804E3FCF0DB33C481/index.m3u8",
+    "vavooNames": [
+      "DONNA TV"
+    ],
+    "epgChannelIds": [
+      "DonnaTV.it"
+    ]
+  },
+  {
+    "id": "supertennis",
+    "type": "tv",
+    "name": "Supertennis",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/supertennis.png",
+    "description": "Supertennis - Canale sportivo",
+    "staticUrl": "https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/rtmp/hls/h24_supertennix/manifest.m3u8",
+    "vavooNames": [
+      "SUPERTENNIS"
+    ],
+    "epgChannelIds": [
+      "SuperTennis.it"
+    ]
+  },
+  {
+    "id": "rai4k",
+    "type": "tv",
+    "name": "Rai 4K (HbbTV)",
+    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai4k.png",
+    "description": "Rai 4K (HbbTV) - Canale pubblico italiano",
+    "staticUrl": "https://raievent10-elem-live.akamaized.net/hls/live/619189/raievent10/raievent10/playlist.m3u8",
+    "vavooNames": [
+      "RAI 4K"
+    ],
+    "epgChannelIds": [
+      "Rai4K.it"
+    ]
+  },
+  {
+    "id": "skycinemauno",
+    "type": "tv",
+    "name": "Sky Cinema Uno (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-uno-it.png",
+    "description": "Sky Cinema Uno - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemauno)/master_2hr-aac.mpd?key_id=111571675d8183ed169725564cded6d9&key=e077dedf383c8aed73d38567a8e6a046",
+    "vavooNames": [
+      "SKY CINEMA UNO"
+    ],
+    "epgChannelIds": [
+      "skycinemauno.it"
+    ]
+  },
+  {
+    "id": "skycinemadue",
+    "type": "tv",
+    "name": "Sky Cinema Due (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-due-it.png",
+    "description": "Sky Cinema Due - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemadue)/master_2hr-aac.mpd?key_id=11152c4ea1a3bffdd277ce333e54631a&key=17f0c028800dbcb294b9aebbae1f7e0c",
+    "vavooNames": [
+      "SKY CINEMA DUE"
+    ],
+    "epgChannelIds": [
+      "skycinemadue.it"
+    ]
+  },
+  {
+    "id": "skycinemacomedy",
+    "type": "tv",
+    "name": "Sky Cinema Comedy (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-comedy-it.png",
+    "description": "Sky Cinema Comedy - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemacomedy)/master_2hr-aac.mpd?key_id=1115676eca79233f2919b53f1a1709b8&key=72298a31b1b015b52adc03ab222494c2",
+    "vavooNames": [
+      "SKY CINEMA COMEDY"
+    ],
+    "epgChannelIds": [
+      "skycinemacomedy.it"
+    ]
+  },
+  {
+    "id": "skycinemaaction",
+    "type": "tv",
+    "name": "Sky Cinema Action (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-action-it.png",
+    "description": "Sky Cinema Action - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemaaction)/master_2hr-aac.mpd?key_id=11150443883da4df27e25110d10fca31&key=83b6390471a083e00f8f3aff2a271be9",
+    "vavooNames": [
+      "SKY CINEMA ACTION"
+    ],
+    "epgChannelIds": [
+      "skycinemaaction.it"
+    ]
+  },
+  {
+    "id": "skycinemafamily",
+    "type": "tv",
+    "name": "Sky Cinema Family (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-family-it.png",
+    "description": "Sky Cinema Family - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemafamily)/master_2hr-aac.mpd?key_id=1115074065832f74af7e279e1203adce&key=20ece4131fbec82ac7ff056838512143",
+    "vavooNames": [
+      "SKY CINEMA FAMILY"
+    ],
+    "epgChannelIds": [
+      "skycinemafamily.it"
+    ]
+  },
+  {
+    "id": "skycinemacollection",
+    "type": "tv",
+    "name": "Sky Cinema Collection (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-collection-it.png",
+    "description": "Sky Cinema Collection - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemacollection)/master_2hr-aac.mpd?key_id=11155d8a1fe0b211137c206354e16d2a&key=7f07d0ef693893a84162d51c1c7259f3",
+    "vavooNames": [
+      "SKY CINEMA COLLECTION"
+    ],
+    "epgChannelIds": [
+      "skycinemacollection.it"
+    ]
+  },
+  {
+    "id": "skycinemadrama",
+    "type": "tv",
+    "name": "Sky Cinema Drama (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-drama-it.png",
+    "description": "Sky Cinema Drama - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemadrama)/master_2hr-aac.mpd?key_id=11155ad807b90b9570fb8cce067f6166&key=74c4430ed8142190e52d4b303286696f",
+    "vavooNames": [
+      "SKY CINEMA DRAMA"
+    ],
+    "epgChannelIds": [
+      "skycinemadrama.it"
+    ]
+  },
+  {
+    "id": "skycinemasuspense",
+    "type": "tv",
+    "name": "Sky Cinema Suspense (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-suspense-it.png",
+    "description": "Sky Cinema Suspense - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemasuspense)/master_2hr-aac.mpd?key_id=1115d04562a1c328a84b2dab41244cba&key=5cf8c65d4177349308d7043384880659",
+    "vavooNames": [
+      "SKY CINEMA SUSPENSE"
+    ],
+    "epgChannelIds": [
+      "skycinemasuspense.it"
+    ]
+  },
+  {
+    "id": "skycinemaromance",
+    "type": "tv",
+    "name": "Sky Cinema Romance (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-romance-it.png",
+    "description": "Sky Cinema Romance - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemaromance)/master_2hr-aac.mpd?key_id=1115dbeea57d2fadedc278956bcbfb02&key=3eee23f97ae49a81c03356599a614fca",
+    "vavooNames": [
+      "SKY CINEMA ROMANCE"
+    ],
+    "epgChannelIds": [
+      "skycinemaromance.it"
+    ]
+  },
+  {
+    "id": "skyuno",
+    "type": "tv",
+    "name": "Sky Uno (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-uno-it.png",
+    "description": "Sky Uno - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyuno)/master_2hr-aac.mpd?key_id=1115002b32ddb67077a31b31cc1b03c1&key=bc1a933a25b36aeed12a60f149157a3d",
+    "vavooNames": [
+      "SKY UNO"
+    ],
+    "epgChannelIds": [
+      "skyuno.it"
+    ]
+  },
+  {
+    "id": "skyserie",
+    "type": "tv",
+    "name": "Sky Serie (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-serie-it.png",
+    "description": "Sky Serie - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyserie)/master_2hr-aac.mpd?key_id=1115bf01aeadce32fcec6a220375a3fa&key=9df360a2a22411897cd8b1bc48c0afc0",
+    "vavooNames": [
+      "SKY SERIE"
+    ],
+    "epgChannelIds": [
+      "skyserie.it"
+    ]
+  },
+  {
+    "id": "skyatlantic",
+    "type": "tv",
+    "name": "Sky Atlantic (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-atlantic-it.png",
+    "description": "Sky Atlantic - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyatlantic)/master_2hr-aac.mpd?key_id=1115f02862576b34b467ad4c54a09cfc&key=bac42e800a5c437b606e2af5b291c607",
+    "vavooNames": [
+      "SKY ATLANTIC"
+    ],
+    "epgChannelIds": [
+      "skyatlantic.it"
+    ]
+  },
+  {
+    "id": "skycrime",
+    "type": "tv",
+    "name": "Sky Crime (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-crime-it.png",
+    "description": "Sky Crime - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycrime)/master_2hr-aac.mpd?key_id=1115aa47cfa18cf73cb6f936cff1f8ee&key=a27e7383d481596cc34334336d3e7219",
+    "vavooNames": [
+      "SKY CRIME"
+    ],
+    "epgChannelIds": [
+      "skycrime.it"
+    ]
+  },
+  {
+    "id": "skyinvestigation",
+    "type": "tv",
+    "name": "Sky Investigation (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-investigation-it.png",
+    "description": "Sky Investigation - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyinvestigation)/master_2hr-aac.mpd?key_id=11153dd8de63f9748252104afd6b7405&key=255e0c5bb81bde9602d8746080496e04",
+    "vavooNames": [
+      "SKY INVESTIGATION"
+    ],
+    "epgChannelIds": [
+      "skyinvestigation.it"
+    ]
+  },
+  {
+    "id": "skydocumentaries",
+    "type": "tv",
+    "name": "Sky Documentaries (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-documentaries-it.png",
+    "description": "Sky Documentaries - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skydocumentaries)/master_2hr-aac.mpd?key_id=111556afa3ac362bbf6d6237a0096793&key=b80627550521e85d0997e3447245f7ff",
+    "vavooNames": [
+      "SKY DOCUMENTARIES"
+    ],
+    "epgChannelIds": [
+      "skydocumentaries.it"
+    ]
   },
   {
     "id": "skynature",
     "type": "tv",
-    "name": "Sky Nature",
-    "poster": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Canale_5_logo_2018.svg",
+    "name": "Sky Nature (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-nature-it.png",
     "description": "Sky Nature - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skynature)/master_2hr-aac.mpd?key_id=111553a2ff74eff230c8bb72efc0504c&key=80ec2c7f64b97098f4f65a15d828ce6a",
-    "vavooNames": ["SKYNATURE", "SKY NATURE"],
-    "epgChannelIds": ["skynature.sky.it", "Sky Nature", "SKYNATURE"]
+    "vavooNames": [
+      "SKY NATURE"
+    ],
+    "epgChannelIds": [
+      "skynature.it"
+    ]
   },
   {
-    "id": "pluto-scifi",
+    "id": "history",
     "type": "tv",
-    "name": "Pluto TV Serie Sci-Fi",
-    "poster": "https://images.pluto.tv/channels/67ed14aaf7c5d70b9089c3bf/colorLogoPNG_1750259768860.png",
-    "description": "Pluto TV Serie Sci-Fi - Canale gratuito",
-    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["PLUTO SCIFI"],
-    "epgChannelIds": ["67ed14aaf7c5d70b9089c3bf", "Pluto TV Serie Sci-Fi"]
+    "name": "History Channel (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/history-channel-it.png",
+    "description": "History Channel - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(historychannel)/master_2hr-aac.mpd?key_id=11158db9a2522642c8da56416d94c6a3&key=edb6a56266dde53f013d170d46b0b265",
+    "vavooNames": [
+      "HISTORY CHANNEL"
+    ],
+    "epgChannelIds": [
+      "history.it"
+    ]
   },
   {
-    "id": "pluto-cartoni",
-    "type": "tv", 
-    "name": "Super! Cartoni Animati",
-    "poster": "https://images.pluto.tv/channels/6093f6f8351eb0000754afb8/colorLogoPNG_1749626196712.png",
-    "description": "Super! Cartoni Animati - Pluto TV",
-    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["SUPER CARTONI"],
-    "epgChannelIds": ["6093f6f8351eb0000754afb8", "Super! Cartoni Animati"]
-  },
-  {
-    "id": "test-channel",
+    "id": "skyarte",
     "type": "tv",
-    "name": "Test Channel",
-    "poster": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Rai_1_-_Logo_2016.svg",
-    "description": "Test Channel per verificare il funzionamento",
-    "staticUrl": "https://realtv.b-cdn.net/realtv-edge.m3u8",
-    "vavooNames": ["TEST", "TEST CHANNEL"],
-    "epgChannelIds": ["TEST", "test"]
+    "name": "Sky Arte (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-arte-it.png",
+    "description": "Sky Arte - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyarte)/master_2hr-aac.mpd?key_id=11158d61157893c665c5ec942528d020&key=2d4b7343dd929afbbd61ef0aa37366d9",
+    "vavooNames": [
+      "SKY ARTE"
+    ],
+    "epgChannelIds": [
+      "skyarte.it"
+    ]
+  },
+  {
+    "id": "mtv",
+    "type": "tv",
+    "name": "MTV (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/mtv-it.png",
+    "description": "MTV - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(mtv)/master_2hr-aac.mpd?key_id=111559b5e50a4be12901e456034285a3&key=2fedd4c9c3be1b7f90e86c7bc44131f8",
+    "vavooNames": [
+      "MTV"
+    ],
+    "epgChannelIds": [
+      "mtv.it"
+    ]
+  },
+  {
+    "id": "comedycentral",
+    "type": "tv",
+    "name": "Comedy Central (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/comedy-central-it.png",
+    "description": "Comedy Central - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(comedycentral)/master_2hr-aac.mpd?key_id=11155778dc9b7dde1e396a9110f09208&key=c030cf978cbdc4a4c84fc68ab467942b",
+    "vavooNames": [
+      "COMEDY CENTRAL"
+    ],
+    "epgChannelIds": [
+      "comedycentral.it"
+    ]
+  },
+  {
+    "id": "skysport24",
+    "type": "tv",
+    "name": "Sky Sport 24 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-24-it.png",
+    "description": "Sky Sport 24 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport24)/master_2hr-aac.mpd?key_id=11151447a65b31d6cb78dd022cb67e8d&key=1d6be453be1e607c133a28826d509a86",
+    "vavooNames": [
+      "SKY SPORT 24"
+    ],
+    "epgChannelIds": [
+      "skysport24.it"
+    ]
+  },
+  {
+    "id": "skysportuno",
+    "type": "tv",
+    "name": "Sky Sport Uno (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-uno-it.png",
+    "description": "Sky Sport Uno - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportuno)/master_2hr-aac.mpd?key_id=1115ca7bae09bbf4364eba27291b88a1&key=a38624a3b373a79e810f3b20cc295096",
+    "vavooNames": [
+      "SKY SPORT UNO"
+    ],
+    "epgChannelIds": [
+      "skysportuno.it"
+    ]
+  },
+  {
+    "id": "skysportf1",
+    "type": "tv",
+    "name": "Sky Sport F1 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-f1-it.png",
+    "description": "Sky Sport F1 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportf1)/master_2hr-aac.mpd?key_id=11155522b79e825f8cdfd7967a31da4c&key=549190d194a655561f5099427a809812",
+    "vavooNames": [
+      "SKY SPORT F1"
+    ],
+    "epgChannelIds": [
+      "skysportf1.it"
+    ]
+  },
+  {
+    "id": "skysportcalcio",
+    "type": "tv",
+    "name": "Sky Sport Calcio (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-calcio-it.png",
+    "description": "Sky Sport Calcio - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportcalcio)/master_2hr-aac.mpd?key_id=11158d8e6031888c16efac25c601f64b&key=0f3bfab5a64037ac8711e58aac24a292",
+    "vavooNames": [
+      "SKY SPORT CALCIO"
+    ],
+    "epgChannelIds": [
+      "skysportcalcio.it"
+    ]
+  },
+  {
+    "id": "skysporttennis",
+    "type": "tv",
+    "name": "Sky Sport Tennis (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-tennis-it.png",
+    "description": "Sky Sport Tennis - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysporttennis)/master_2hr-aac.mpd?key_id=111587fedaf11c03f2140b3e53ff5a5b&key=4192c4108bb887cbd33dc69afabc8096",
+    "vavooNames": [
+      "SKY SPORT TENNIS"
+    ],
+    "epgChannelIds": [
+      "skysporttennis.it"
+    ]
+  },
+  {
+    "id": "skysportmotogp",
+    "type": "tv",
+    "name": "Sky Sport MotoGP (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-motogp-it.png",
+    "description": "Sky Sport MotoGP - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmotogp)/master_2hr-aac.mpd?key_id=11153aff5496be1a206a178ab3c1c078&key=806eb5923c951bd205257282de834740",
+    "vavooNames": [
+      "SKY SPORT MOTOGP"
+    ],
+    "epgChannelIds": [
+      "skysportmotogp.it"
+    ]
+  },
+  {
+    "id": "skysportarena",
+    "type": "tv",
+    "name": "Sky Sport Arena (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-arena-it.png",
+    "description": "Sky Sport Arena - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportarena)/master_2hr-aac.mpd?key_id=1115f90a6831fa7ca058a30383cb0652&key=6c086c2a0a8de8c1f413e4128246abdd",
+    "vavooNames": [
+      "SKY SPORT ARENA"
+    ],
+    "epgChannelIds": [
+      "skysportarena.it"
+    ]
+  },
+  {
+    "id": "skysportmax",
+    "type": "tv",
+    "name": "Sky Sport Max (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-max-it.png",
+    "description": "Sky Sport Max - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmax)/master_2hr-aac.mpd?key_id=11155656191f1c60af13deb6a20f0354&key=95448b624c83d9a9719342cf1ab3e157",
+    "vavooNames": [
+      "SKY SPORT MAX"
+    ],
+    "epgChannelIds": [
+      "skysportmax.it"
+    ]
+  },
+  {
+    "id": "skysportnba",
+    "type": "tv",
+    "name": "Sky Sport NBA (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-nba-it.png",
+    "description": "Sky Sport NBA - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportnba)/master_2hr-aac.mpd?key_id=111509ad5d16918190d8ceb1afa3c2c2&key=5369df3ee38ad965da555846bfa61a37",
+    "vavooNames": [
+      "SKY SPORT NBA"
+    ],
+    "epgChannelIds": [
+      "skysportnba.it"
+    ]
+  },
+  {
+    "id": "eurosport1",
+    "type": "tv",
+    "name": "Eurosport 1 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/eurosport-1-it.png",
+    "description": "Eurosport 1 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(eurosport1)/master_2hr-aac.mpd?key_id=11158bc4ef31195cc0e9f93bcb99b8e0&key=1e3169483337e73d3d4646931197b062",
+    "vavooNames": [
+      "EUROSPORT 1"
+    ],
+    "epgChannelIds": [
+      "eurosport1.it"
+    ]
+  },
+  {
+    "id": "eurosport2",
+    "type": "tv",
+    "name": "Eurosport 2 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/eurosport-2-it.png",
+    "description": "Eurosport 2 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(eurosport2)/master_2hr-aac.mpd?key_id=1115097a6b5a2cc55c2f6e9c65043ed7&key=2f82bc6a71fad0a0646936c2b0099c73",
+    "vavooNames": [
+      "EUROSPORT 2"
+    ],
+    "epgChannelIds": [
+      "eurosport2.it"
+    ]
+  },
+  {
+    "id": "skysport251",
+    "type": "tv",
+    "name": "Sky Sport 251 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-251-it.png",
+    "description": "Sky Sport 251 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport251)/master_2hr-aac.mpd?key_id=11151be3428480868250f38fd1b7f372&key=43c8bf86dc2f6cba8778e7cdff0496cd",
+    "vavooNames": [
+      "SKY SPORT 251"
+    ],
+    "epgChannelIds": [
+      "skysport251.it"
+    ]
+  },
+  {
+    "id": "skysport253",
+    "type": "tv",
+    "name": "Sky Sport 253 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-253-it.png",
+    "description": "Sky Sport 253 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport253)/master_2hr-aac.mpd?key_id=11151848f262b43a21d7a61bc958c6aa&key=400f5a392c6c5893643b8df74a0e1eec",
+    "vavooNames": [
+      "SKY SPORT 253"
+    ],
+    "epgChannelIds": [
+      "skysport253.it"
+    ]
+  },
+  {
+    "id": "skysport252",
+    "type": "tv",
+    "name": "Sky Sport 252 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-252-it.png",
+    "description": "Sky Sport 252 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport252)/master_2hr-aac.mpd?key_id=1115ef7a71a700a8a00d028fd70dc4be&key=8742adddc304a5e3aa5376879b02888c",
+    "vavooNames": [
+      "SKY SPORT 252"
+    ],
+    "epgChannelIds": [
+      "skysport252.it"
+    ]
+  },
+  {
+    "id": "skysport255",
+    "type": "tv",
+    "name": "Sky Sport 255 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-255-it.png",
+    "description": "Sky Sport 255 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport255)/master_2hr-aac.mpd?key_id=111545473a34f1fe05aae0e10700a7e3&key=fdee7c55cb25797ea9918644f3db4ef5",
+    "vavooNames": [
+      "SKY SPORT 255"
+    ],
+    "epgChannelIds": [
+      "skysport255.it"
+    ]
+  },
+  {
+    "id": "skysport254",
+    "type": "tv",
+    "name": "Sky Sport 254 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-254-it.png",
+    "description": "Sky Sport 254 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport254)/master_2hr-aac.mpd?key_id=11159862c693989cb235f5371dd11fba&key=25e15b3762a2cfc26d471324f197aff6",
+    "vavooNames": [
+      "SKY SPORT 254"
+    ],
+    "epgChannelIds": [
+      "skysport254.it"
+    ]
+  },
+  {
+    "id": "skysport257",
+    "type": "tv",
+    "name": "Sky Sport 257 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-257-it.png",
+    "description": "Sky Sport 257 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport257)/master_2hr-aac.mpd?key_id=111550e7ba986b365bcc67dd01cdd27e&key=c292fe7e970841aa795e8832414c5b2e",
+    "vavooNames": [
+      "SKY SPORT 257"
+    ],
+    "epgChannelIds": [
+      "skysport257.it"
+    ]
+  },
+  {
+    "id": "skysport256",
+    "type": "tv",
+    "name": "Sky Sport 256 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-256-it.png",
+    "description": "Sky Sport 256 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport256)/master_2hr-aac.mpd?key_id=1115e30272b48b327a666414728f89c0&key=e17fd69cf15cd8e9a57b3b2127f7e0bc",
+    "vavooNames": [
+      "SKY SPORT 256"
+    ],
+    "epgChannelIds": [
+      "skysport256.it"
+    ]
+  },
+  {
+    "id": "skysport259",
+    "type": "tv",
+    "name": "Sky Sport 259 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-259-it.png",
+    "description": "Sky Sport 259 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport259)/master_2hr-aac.mpd?key_id=11158627294fcbd5e724e2b521c87aeb&key=c26bc6e33e8f39dc748f66885935a63f",
+    "vavooNames": [
+      "SKY SPORT 259"
+    ],
+    "epgChannelIds": [
+      "skysport259.it"
+    ]
+  },
+  {
+    "id": "skysport258",
+    "type": "tv",
+    "name": "Sky Sport 258 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-258-it.png",
+    "description": "Sky Sport 258 - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport258)/master_2hr-aac.mpd?key_id=1115bb0040c6d04b822da9ae1af8977d&key=c80ba56fdee7782313a33691e9cc2146",
+    "vavooNames": [
+      "SKY SPORT 258"
+    ],
+    "epgChannelIds": [
+      "skysport258.it"
+    ]
+  },
+  {
+    "id": "dazn1",
+    "type": "tv",
+    "name": "Dazn 1 (MPD)",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/dazn-1-it.png",
+    "description": "Dazn 1 - Dazn",
+    "staticUrl": "https://abe6fjxaaaaaaaamc4pg55ekcyqz4.otte.live.cf.ww.aiv-cdn.net/dub-nitro/live/clients/dash/enc/lgk8kppclc/out/v1/f51173b6b0624a4386358ab8dfee257f/cenc.mpd?key_id=8272bf6ba46f23f9da5270057b6e028a&key=74ae70dd10b4bb38ed6ffe843f3e2ccd",
+    "vavooNames": [
+      "DAZN 1"
+    ],
+    "epgChannelIds": [
+      "dazn1.it"
+    ]
+  },
+  {
+    "id": "deakids",
+    "type": "tv",
+    "name": "DeAKids",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/dea-kids-it.png",
+    "description": "DeAKids - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(deakids)/master_2hr-aac.mpd?key_id=1115a64e55228a124aea1f0f275cbb72&key=efb0d6327dc8566604f401aef73b54e7",
+    "vavooNames": [
+      "DEAKIDS"
+    ],
+    "epgChannelIds": [
+      "DeAKids.it"
+    ]
+  },
+  {
+    "id": "nickjr",
+    "type": "tv",
+    "name": "Nick Jr",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/nick-jr-it.png",
+    "description": "Nick Jr - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(nickjunior)/master_2hr-aac.mpd?key_id=11159c03b1b81a3705641f78ffdedd78&key=04fb2484b421c35aac9b2d5cea1c5cb9",
+    "vavooNames": [
+      "NICK JR"
+    ],
+    "epgChannelIds": [
+      "NickJr.it"
+    ]
+  },
+  {
+    "id": "skyadventure",
+    "type": "tv",
+    "name": "Sky Adventure",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Sky_Adventure_Logo_1080p.png",
+    "description": "Sky Adventure - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyadventure)/master_2hr-aac.mpd?key_id=11158035ffbf17eebd02027e96383161&key=7e1ea10428e8c5cdfdac6c55b23018d2",
+    "vavooNames": [
+      "SKY ADVENTURE"
+    ],
+    "epgChannelIds": [
+      "skyadventure.it"
+    ]
+  },
+  {
+    "id": "nickelodeon",
+    "type": "tv",
+    "name": "Nickelodeon",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/nickelodeon-it.png",
+    "description": "Nickelodeon - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(nickelodeon)/master_2hr-aac.mpd?key_id=111502ab6d88754727d58f0952977a83&key=536d42da4788324e7c7aaf72ceb061c2",
+    "vavooNames": [
+      "NICKELODEON"
+    ],
+    "epgChannelIds": [
+      "Nickelodeon.it"
+    ]
+  },
+  {
+    "id": "cartoonnetwork",
+    "type": "tv",
+    "name": "Cartoon Network",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/cartoon-network-it.png",
+    "description": "Cartoon Network - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(cartoonnetwork)/master_2hr-aac.mpd?key_id=1115769416f3dc252a105e9b6baa84e7&key=44b1356b9d609448b8c102b09bcc4cca",
+    "vavooNames": [
+      "CARTOON NETWORK"
+    ],
+    "epgChannelIds": [
+      "CartoonNetwork.it"
+    ]
+  },
+  {
+    "id": "boomerang",
+    "type": "tv",
+    "name": "Boomerang",
+    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/boomerang-it.png",
+    "description": "Boomerang - Sky",
+    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(boomerang)/master_2hr-aac.mpd?key_id=1115cc41a0daf57a22c1c81bd139b559&key=31347f9bbc90713e972249b54ec882b2",
+    "vavooNames": [
+      "BOOMERANG"
+    ],
+    "epgChannelIds": [
+      "Boomerang.it"
+    ]
   }
 ]
