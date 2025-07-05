@@ -1139,7 +1139,7 @@
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-calcio-it.png",
     "description": "Sky Sport Calcio - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportcalcio)/master_2hr-aac.mpd?key_id=11158d8e6031888c16efac25c601f64b&key=0f3bfab5a64037ac8711e58aac24a292",
-    "staticUrl2": "https://live01.rai.it/rai1.m3u8",
+    "staticUrl2": "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportcalcio)/master_2hr-all.mpd&key_id=11185d4276f70e6931dd5809956345ca&key=2c11ba43fab9050c1226b2f96a660f77",
     "vavooNames": [
       "SKY SPORT CALCIO"
     ],
@@ -1155,7 +1155,7 @@
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-tennis-it.png",
     "description": "Sky Sport Tennis - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysporttennis)/master_2hr-aac.mpd?key_id=111587fedaf11c03f2140b3e53ff5a5b&key=4192c4108bb887cbd33dc69afabc8096",
-    "staticUrl2": "https://live01.rai.it/rai1.m3u8",
+    "staticUrl2": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysporttennis)/master_2hr-aac.mpd&key_id=111862d27c1073698d6ec5bbc328fc4c&key=777ec90fc3cdc6cec1b963ef14760ef1",
     "vavooNames": [
       "SKY SPORT TENNIS"
     ],
@@ -1187,7 +1187,7 @@
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-arena-it.png",
     "description": "Sky Sport Arena - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportarena)/master_2hr-aac.mpd?key_id=1115f90a6831fa7ca058a30383cb0652&key=6c086c2a0a8de8c1f413e4128246abdd",
-    "staticUrl2": "https://live01.rai.it/rai1.m3u8",
+    "staticUrl2": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportarena)/master_2hr-aac.mpd&key_id=111894dfaecfc64acf114b026b1b06ff&key=d1a149879a17f13f2d58b7ade5d8a066",
     "vavooNames": [
       "SKY SPORT ARENA"
     ],
@@ -1203,7 +1203,7 @@
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-max-it.png",
     "description": "Sky Sport Max - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmax)/master_2hr-aac.mpd?key_id=11155656191f1c60af13deb6a20f0354&key=95448b624c83d9a9719342cf1ab3e157",
-    "staticUrl2": "https://live01.rai.it/rai1.m3u8",
+    "staticUrl2": "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportmax)/master_2hr-all.mpd&key_id=111821aee8a222fc0fe61a76d62e219d&key=cf75ce47142284bd131c9c00ba686a7a",
     "vavooNames": [
       "SKY SPORT MAX"
     ],
@@ -1219,7 +1219,7 @@
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-sport-nba-it.png",
     "description": "Sky Sport NBA - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportnba)/master_2hr-aac.mpd?key_id=111509ad5d16918190d8ceb1afa3c2c2&key=5369df3ee38ad965da555846bfa61a37",
-    "staticUrl2": "https://live01.rai.it/rai1.m3u8",
+    "staticUrl2": "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportnba)/master_2hr-all.mpd&key_id=111841df5d2386a96b8647e865ee9ed9&key=e265fe7a61d5e658e62a5b26b37358b9",
     "vavooNames": [
       "SKY SPORT NBA"
     ],
