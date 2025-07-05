@@ -547,9 +547,14 @@ function createBuilder(config: AddonConfig = {}) {
           // Aggiungi informazioni EPG se disponibili
           if (epgManager) {
             try {
+              console.log(`🔍 EPG DEBUG per ${channel.name}:`);
+              console.log(`  - epgChannelIds:`, (channel as any).epgChannelIds);
+              
               // Usa prima gli epgChannelIds dal canale, poi fallback al nome
               const epgChannelIds = (channel as any).epgChannelIds;
               const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+              
+              console.log(`  - epgChannelId trovato:`, epgChannelId);
               
               if (epgChannelId) {
                 console.log(`📺 EPG Channel ID trovato per ${channel.name}: ${epgChannelId}`);
@@ -557,6 +562,9 @@ function createBuilder(config: AddonConfig = {}) {
                 // Ottieni programma corrente e prossimo
                 const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
                 const nextProgram = await epgManager.getNextProgram(epgChannelId);
+                
+                console.log(`  - currentProgram:`, currentProgram ? currentProgram.title : 'null');
+                console.log(`  - nextProgram:`, nextProgram ? nextProgram.title : 'null');
                 
                 if (currentProgram || nextProgram) {
                   let epgDescription = channel.description || '';
@@ -580,6 +588,9 @@ function createBuilder(config: AddonConfig = {}) {
                   }
                   
                   metaWithPrefix.description = epgDescription;
+                  console.log(`✅ EPG aggiunto alla descrizione per ${channel.name}`);
+                } else {
+                  console.log(`⚠️ Nessun programma trovato per ${channel.name}`);
                 }
               } else {
                 console.log(`⚠️ Nessun EPG Channel ID trovato per ${channel.name}${epgChannelIds ? ` (IDs cercati: ${epgChannelIds.join(', ')})` : ''}`);
@@ -587,6 +598,8 @@ function createBuilder(config: AddonConfig = {}) {
             } catch (epgError) {
               console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
             }
+          } else {
+            console.log(`⚠️ EPG Manager non disponibile per ${channel.name}`);
           }
           
           return Promise.resolve({ meta: metaWithPrefix });
@@ -1109,7 +1122,7 @@ app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
     }
 });
 
-app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
+app.get('/:config/meta/:type/:id.json', async (req: Request, res: Response) => {
     const configStr = req.params.config;
     const type = req.params.type;
     const id = req.params.id;
@@ -1117,7 +1130,7 @@ app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
     
     console.log(`📺 META REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
     
-    // Chiamata diretta all'handler senza usare il builder
+    // Usa la logica del meta handler direttamente
     if (type === "tv") {
         // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
         const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
@@ -1126,11 +1139,71 @@ app.get('/:config/meta/:type/:id.json', (req: Request, res: Response) => {
         const channel = tvChannels.find((c: any) => c.id === cleanId);
         if (channel) {
             console.log(`✅ Found meta for channel: ${channel.name} (original id: ${cleanId})`);
-            // Mantieni l'ID originale con prefisso nella risposta
+            
+            // Prepara i metadati base
             const metaWithPrefix = {
                 ...channel,
                 id: `tv:${channel.id}`
             };
+
+            // Aggiungi informazioni EPG se disponibili
+            if (epgManager) {
+                try {
+                    console.log(`🔍 EPG DEBUG per ${channel.name}:`);
+                    console.log(`  - epgChannelIds:`, (channel as any).epgChannelIds);
+                    
+                    // Usa prima gli epgChannelIds dal canale, poi fallback al nome
+                    const epgChannelIds = (channel as any).epgChannelIds;
+                    const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+                    
+                    console.log(`  - epgChannelId trovato:`, epgChannelId);
+                    
+                    if (epgChannelId) {
+                        console.log(`📺 EPG Channel ID trovato per ${channel.name}: ${epgChannelId}`);
+                        
+                        // Ottieni programma corrente e prossimo
+                        const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
+                        const nextProgram = await epgManager.getNextProgram(epgChannelId);
+                        
+                        console.log(`  - currentProgram:`, currentProgram ? currentProgram.title : 'null');
+                        console.log(`  - nextProgram:`, nextProgram ? nextProgram.title : 'null');
+                        
+                        if (currentProgram || nextProgram) {
+                            let epgDescription = channel.description || '';
+                            
+                            if (currentProgram) {
+                                const startTime = epgManager.formatTime(currentProgram.start);
+                                const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
+                                epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
+                                if (currentProgram.description) {
+                                    epgDescription += `\n${currentProgram.description}`;
+                                }
+                            }
+                            
+                            if (nextProgram) {
+                                const nextStartTime = epgManager.formatTime(nextProgram.start);
+                                const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
+                                epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
+                                if (nextProgram.description) {
+                                    epgDescription += `\n${nextProgram.description}`;
+                                }
+                            }
+                            
+                            metaWithPrefix.description = epgDescription;
+                            console.log(`✅ EPG aggiunto alla descrizione per ${channel.name}`);
+                        } else {
+                            console.log(`⚠️ Nessun programma trovato per ${channel.name}`);
+                        }
+                    } else {
+                        console.log(`⚠️ Nessun EPG Channel ID trovato per ${channel.name}${epgChannelIds ? ` (IDs cercati: ${epgChannelIds.join(', ')})` : ''}`);
+                    }
+                } catch (epgError) {
+                    console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
+                }
+            } else {
+                console.log(`⚠️ EPG Manager non disponibile per ${channel.name}`);
+            }
+            
             res.json({ meta: metaWithPrefix });
         } else {
             console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
