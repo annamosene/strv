@@ -141,47 +141,26 @@ function encodeConfigToBase64(config: AddonConfig): string {
 
 // Funzione per decodificare la configurazione da Base64 (senza Buffer)
 function decodeConfigFromBase64(base64String: string): AddonConfig {
-    console.log(`🔧 Attempting to decode Base64 config:`, base64String);
-    console.log(`🔧 Base64 string length:`, base64String.length);
+    console.log(`🔧 Attempting to decode Base64 config (length: ${base64String.length})`);
+    
+    // Prima controlla se è già un JSON valido (non encoded)
+    try {
+        const directParse = JSON.parse(base64String);
+        console.log(`✅ Direct JSON parse successful`);
+        return directParse;
+    } catch (e) {
+        // Non è un JSON diretto, procedi con il Base64
+    }
     
     try {
-        // Decodifica Base64 manualmente
-        const jsonString = decodeURIComponent(escape(atob(base64String)));
-        console.log(`🔧 Strategy 1 - decoded JSON string:`, jsonString);
+        // Strategia principale: decodifica Base64 e parse JSON
+        const jsonString = atob(base64String);
         const parsed = JSON.parse(jsonString);
-        console.log(`🔧 Strategy 1 - parsed config:`, parsed);
+        console.log(`✅ Base64 decode successful`);
         return parsed;
     } catch (error) {
-        console.log(`🔧 Failed to decode Base64 config (trying without decodeURIComponent):`, error);
-        // Fallback: prova senza decodeURIComponent
-        try {
-            const jsonString2 = escape(atob(base64String));
-            console.log(`🔧 Strategy 2 - decoded JSON string:`, jsonString2);
-            const parsed2 = JSON.parse(jsonString2);
-            console.log(`🔧 Strategy 2 - parsed config:`, parsed2);
-            return parsed2;
-        } catch (error2) {
-            console.log(`🔧 Failed to decode Base64 config (second attempt):`, error2);
-            // Ultimo fallback: prova direttamente atob
-            try {
-                const jsonString3 = atob(base64String);
-                console.log(`🔧 Strategy 3 - decoded JSON string:`, jsonString3);
-                const parsed3 = JSON.parse(jsonString3);
-                console.log(`🔧 Strategy 3 - parsed config:`, parsed3);
-                return parsed3;
-            } catch (error3) {
-                console.log(`🔧 Failed to decode Base64 config (final attempt):`, error3);
-                // Fallback finale: se è un JSON string diretto, prova quello
-                try {
-                    const parsed4 = JSON.parse(base64String);
-                    console.log(`🔧 Strategy 4 - direct JSON parse successful:`, parsed4);
-                    return parsed4;
-                } catch (error4) {
-                    console.log(`🔧 All strategies failed, returning empty config:`, error4);
-                    return {};
-                }
-            }
-        }
+        console.log(`❌ Base64 decode failed:`, (error as Error).message || error);
+        return {};
     }
 }
 
@@ -223,41 +202,41 @@ function atob(str: string): string {
 
 // Funzione per parsare la configurazione dall'URL (supporta sia JSON che Base64)
 function parseConfigFromArgs(args: any): AddonConfig {
-    console.log(`🔧 parseConfigFromArgs called with:`, typeof args, args);
+    console.log(`🔧 [DEBUG] parseConfigFromArgs called with:`, typeof args, args);
     
     const config: AddonConfig = {};
     
     if (typeof args === 'string') {
         // Prima prova con Base64
         try {
-            console.log(`🔧 Trying to decode Base64 config: ${args.substring(0, 50)}...`);
+            console.log(`🔧 [DEBUG] Trying to decode Base64 config: ${args.substring(0, 50)}...`);
             const decoded = decodeConfigFromBase64(args);
-            console.log(`🔧 Successfully decoded Base64 config:`, decoded);
+            console.log(`🔧 [DEBUG] Successfully decoded Base64 config:`, JSON.stringify(decoded, null, 2));
             return decoded;
         } catch (base64Error) {
-            console.log(`🔧 Base64 decode failed, trying JSON decode...`);
+            console.log(`🔧 [DEBUG] Base64 decode failed, trying JSON decode...`);
             
             // Fallback: prova con JSON tradizionale
             try {
-                console.log(`🔧 Trying to decode JSON config: ${args}`);
+                console.log(`🔧 [DEBUG] Trying to decode JSON config: ${args}`);
                 const decoded = decodeURIComponent(args);
-                console.log(`🔧 Decoded: ${decoded}`);
+                console.log(`🔧 [DEBUG] Decoded: ${decoded}`);
                 const parsed = JSON.parse(decoded);
-                console.log(`🔧 Parsed JSON config:`, parsed);
+                console.log(`🔧 [DEBUG] Parsed JSON config:`, JSON.stringify(parsed, null, 2));
                 return parsed;
             } catch (jsonError) {
-                console.log(`🔧 Failed to parse both Base64 and JSON config:`, jsonError);
+                console.log(`🔧 [DEBUG] Failed to parse both Base64 and JSON config:`, jsonError);
                 return {};
             }
         }
     }
     
     if (typeof args === 'object' && args !== null) {
-        console.log(`🔧 Using object config:`, args);
+        console.log(`🔧 [DEBUG] Using object config:`, JSON.stringify(args, null, 2));
         return args;
     }
     
-    console.log(`🔧 Returning empty config`);
+    console.log(`🔧 [DEBUG] Returning empty config`);
     return config;
 }
 
@@ -494,21 +473,59 @@ function createBuilder(config: AddonConfig = {}) {
 
           // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 1. Stream via MFP proxy per MPD (se configurato)
+          // 1. Stream via MFP proxy per MPD (se configurato) - FIXED
           if (staticUrl && mfpUrl && mfpPsw) {
-            let proxyUrl: string;
-            if (staticUrl.includes('.mpd')) {
-              // Per file MPD usiamo il proxy MPD
-              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
-            } else {
-              // Per altri stream usiamo il proxy stream normale
-              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            try {
+              console.log(`🔧 Processing static URL: ${staticUrl}`);
+              
+              // Parse dell'URL per separare base e parametri
+              const urlObj = new URL(staticUrl);
+              const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+              const searchParams = urlObj.searchParams;
+              
+              console.log(`🔧 Base URL extracted: ${baseUrl}`);
+              console.log(`🔧 Query parameters:`, Array.from(searchParams.entries()));
+              
+              // Costruisci l'URL MFP base
+              let proxyUrl: string;
+              if (staticUrl.includes('.mpd')) {
+                // Per file MPD usiamo il proxy MPD
+                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
+              } else {
+                // Per altri stream usiamo il proxy stream normale
+                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
+              }
+              
+              // Aggiungi key_id e key come parametri separati (se presenti)
+              if (searchParams.has('key_id')) {
+                proxyUrl += `&key_id=${encodeURIComponent(searchParams.get('key_id')!)}`;
+                console.log(`🔧 Added key_id parameter: ${searchParams.get('key_id')}`);
+              }
+              if (searchParams.has('key')) {
+                proxyUrl += `&key=${encodeURIComponent(searchParams.get('key')!)}`;
+                console.log(`🔧 Added key parameter: ${searchParams.get('key')}`);
+              }
+              
+              streams.push({
+                url: proxyUrl,
+                title: `${(channel as any).name} - MFP Proxy (FIXED)`
+              });
+              console.log(`✅ Added FIXED MFP proxy stream: ${proxyUrl}`);
+            } catch (urlError) {
+              console.log(`❌ Error parsing URL for MFP proxy: ${urlError}`);
+              // Fallback alla logica precedente
+              let proxyUrl: string;
+              if (staticUrl.includes('.mpd')) {
+                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+              } else {
+                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+              }
+              streams.push({
+                url: proxyUrl,
+                title: `${(channel as any).name} - MFP Proxy (Fallback)`
+              });
+              console.log(`✅ Added fallback MFP proxy stream: ${proxyUrl}`);
             }
-            streams.push({
-              url: proxyUrl,
-              title: `${(channel as any).name} - MFP Proxy`
-            });
-            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
           } else {
             console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
@@ -967,7 +984,7 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
     
     // Chiamata diretta alla logica di stream
     if (type === "tv") {
-        console.log(`========= TV STREAM REQUEST =========`);
+        console.log(`========= TV STREAM REQUEST (GENERAL ENDPOINT) =========`);
         console.log(`Channel ID: ${id}`);
         console.log(`Config received:`, JSON.stringify(config, null, 2));
         
@@ -999,23 +1016,62 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
 
         // Stream rimossi: "diretto" e "test" come richiesto
 
-          // 1. Stream via MFP proxy per MPD (se configurato)
+          // 1. Stream via MFP proxy per MPD (se configurato) - FIXED GENERAL ENDPOINT
+          console.log(`🔧 GENERAL ENDPOINT - Checking MFP: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           if (staticUrl && mfpUrl && mfpPsw) {
-            let proxyUrl: string;
-            if (staticUrl.includes('.mpd')) {
-              // Per file MPD usiamo il proxy MPD
-              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
-            } else {
-              // Per altri stream usiamo il proxy stream normale
-              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+            try {
+              console.log(`🔧 Processing static URL (GENERAL): ${staticUrl}`);
+              
+              // Parse dell'URL per separare base e parametri
+              const urlObj = new URL(staticUrl);
+              const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+              const searchParams = urlObj.searchParams;
+              
+              console.log(`🔧 Base URL extracted (GENERAL): ${baseUrl}`);
+              console.log(`🔧 Query parameters (GENERAL):`, Array.from(searchParams.entries()));
+              
+              // Costruisci l'URL MFP base
+              let proxyUrl: string;
+              if (staticUrl.includes('.mpd')) {
+                // Per file MPD usiamo il proxy MPD
+                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
+              } else {
+                // Per altri stream usiamo il proxy stream normale
+                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${mfpPsw}&d=${encodeURIComponent(baseUrl)}`;
+              }
+              
+              // Aggiungi key_id e key come parametri separati (se presenti)
+              if (searchParams.has('key_id')) {
+                proxyUrl += `&key_id=${encodeURIComponent(searchParams.get('key_id')!)}`;
+                console.log(`🔧 Added key_id parameter (GENERAL): ${searchParams.get('key_id')}`);
+              }
+              if (searchParams.has('key')) {
+                proxyUrl += `&key=${encodeURIComponent(searchParams.get('key')!)}`;
+                console.log(`🔧 Added key parameter (GENERAL): ${searchParams.get('key')}`);
+              }
+              
+              streams.push({
+                url: proxyUrl,
+                title: `${(channel as any).name} - MFP Proxy (FIXED)`
+              });
+              console.log(`✅ Added FIXED MFP proxy stream (GENERAL): ${proxyUrl}`);
+            } catch (urlError) {
+              console.log(`❌ Error parsing URL for MFP proxy (GENERAL): ${urlError}`);
+              // Fallback alla logica precedente
+              let proxyUrl: string;
+              if (staticUrl.includes('.mpd')) {
+                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+              } else {
+                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+              }
+              streams.push({
+                url: proxyUrl,
+                title: `${(channel as any).name} - MFP Proxy (Fallback)`
+              });
+              console.log(`✅ Added fallback MFP proxy stream (GENERAL): ${proxyUrl}`);
             }
-            streams.push({
-              url: proxyUrl,
-              title: `${(channel as any).name} - MFP Proxy`
-            });
-            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
           } else {
-            console.log(`❌ Cannot create MFP proxy: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+            console.log(`❌ Cannot create MFP proxy (GENERAL): staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
           }
 
           // 2. Stream Vavoo dinamico (risolve in tempo reale)
@@ -1129,11 +1185,50 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     // 1. Stream via MFP proxy per MPD (se configurato)
     if (staticUrl && mfpUrl && mfpPsw) {
         let proxyUrl: string;
-        if (staticUrl.includes('.mpd')) {
-            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
-        } else {
-            proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+        
+        // Parse dell'URL static per estrarre key_id e key se presenti
+        let baseUrl = staticUrl;
+        const urlParams = new URLSearchParams();
+        
+        console.log(`🔧 Original staticUrl: ${staticUrl}`);
+        
+        try {
+            const urlObj = new URL(staticUrl);
+            // Prendi solo il base URL senza parametri
+            baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+            
+            console.log(`🔧 Parsed baseUrl: ${baseUrl}`);
+            
+            // Estrai key_id e key dai parametri originali
+            const keyId = urlObj.searchParams.get('key_id');
+            const key = urlObj.searchParams.get('key');
+            
+            console.log(`🔧 Extracted key_id: ${keyId}`);
+            console.log(`🔧 Extracted key: ${key}`);
+            
+            if (keyId) urlParams.append('key_id', keyId);
+            if (key) urlParams.append('key', key);
+            
+            console.log(`🔧 URL params to append: ${urlParams.toString()}`);
+            
+        } catch (e) {
+            // Se l'URL non è valido, usa quello originale
+            console.log('🔧 URL parsing failed, using original URL');
         }
+        
+        if (staticUrl.includes('.mpd')) {
+            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${baseUrl}`;
+        } else {
+            proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${baseUrl}`;
+        }
+        
+        // Aggiungi i parametri key_id e key separatamente
+        if (urlParams.toString()) {
+            proxyUrl += `&${urlParams.toString()}`;
+        }
+        
+        console.log(`🔧 Final proxyUrl: ${proxyUrl}`);
+        
         streams.push({
             url: proxyUrl,
             title: `${(channel as any).name} - MFP Proxy`
