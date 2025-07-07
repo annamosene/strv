@@ -57,7 +57,8 @@ const baseManifest: Manifest = {
                         "News",
                         "Sport",
                         "Cinema",
-                        "Generali"
+                        "Generali",
+                        "Documentari"
                     ]
                 }
             ]
