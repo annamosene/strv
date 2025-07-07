@@ -868,6 +868,205 @@ app.options('*', (req: Request, res: Response) => {
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// === TV STREAM HANDLER CUSTOM (Prima del router SDK) ===
+app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const id = req.params.id;
+    const config = parseConfigFromArgs(configStr);
+    
+    console.log(`🎬 TV STREAM REQUEST: id=${id}, config parsed:`, !!config);
+    
+    console.log(`========= TV STREAM REQUEST (SPECIFIC) =========`);
+    console.log(`Channel ID: ${id}`);
+    console.log(`Config received:`, JSON.stringify(config, null, 2));
+    
+    // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
+    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+    console.log(`Clean ID for lookup: ${cleanId}`);
+    
+    const channel = tvChannels.find((c: any) => c.id === cleanId);
+    if (!channel) {
+        console.log(`❌ Channel ${id} (cleaned: ${cleanId}) not found in tvChannels`);
+        res.status(404).json({ error: 'Channel not found' });
+        return;
+    }
+    
+    console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
+    
+    const streams: { url: string; title: string }[] = [];
+    const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
+                 (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
+    const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
+    const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+    const staticUrl = (channel as any).staticUrl;
+
+    console.log(`🔧 Configuration:`);
+    console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
+    console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
+    console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
+    console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
+
+    // Controlla se il canale è in chiaro (da rai1 a rai4k)
+    const isFreeToAir = isFreeToAirChannel(cleanId);
+    console.log(`🔧 Channel ${cleanId} is free to air: ${isFreeToAir}`);
+
+    // 1. Stream via staticUrl (MPD o HLS)
+    if (staticUrl) {
+      if (isFreeToAir) {
+        // Per canali in chiaro, usa direttamente il staticUrl senza MFP
+        streams.push({
+          url: staticUrl,
+          title: `${(channel as any).name} (MPD)`
+        });
+        console.log(`✅ Added direct staticUrl for free-to-air channel: ${staticUrl}`);
+      } else if (mfpUrl && mfpPsw) {
+        // Per canali non in chiaro, usa MFP proxy
+        let proxyUrl: string;
+        if (staticUrl.includes('.mpd')) {
+          // Per file MPD usiamo il proxy MPD
+          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+        } else {
+          // Per altri stream usiamo il proxy stream normale
+          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+        }
+        streams.push({
+          url: proxyUrl,
+          title: `${(channel as any).name} (MPD)`
+        });
+        console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
+      } else {
+        console.log(`❌ Cannot create stream: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+      }
+    } else {
+      console.log(`❌ No staticUrl available for channel ${cleanId}`);
+    }
+
+    // 2. Stream via staticUrl2 (seconda URL statica)
+    const staticUrl2 = (channel as any).staticUrl2;
+    if (staticUrl2) {
+      if (isFreeToAir) {
+        // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
+        streams.push({
+          url: staticUrl2,
+          title: `${(channel as any).name} (MPD HD)`
+        });
+        console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
+      } else if (mfpUrl && mfpPsw) {
+        // Per canali non in chiaro, usa MFP proxy
+        let proxyUrl: string;
+        if (staticUrl2.includes('.mpd')) {
+          // Per file MPD usiamo il proxy MPD
+          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+        } else {
+          // Per altri stream usiamo il proxy stream normale
+          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+        }
+        streams.push({
+          url: proxyUrl,
+          title: `${(channel as any).name} (MPD HD)`
+        });
+        console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
+      } else {
+        console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
+      }
+    }
+
+    // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
+    const channelName = (channel as any).name;
+    if (channelName && tvProxyUrl) {
+      try {
+        console.log(`🔍 Trying to get Vavoo original link for: ${channelName}`);
+        const vavooOriginalLink = await getVavooOriginalLink(channelName);
+        if (vavooOriginalLink) {
+          console.log(`✅ Found Vavoo original link: ${vavooOriginalLink}`);
+          const vavooProxyUrl = `${tvProxyUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${vavooOriginalLink}`;
+          streams.push({
+            url: vavooProxyUrl,
+            title: `${channelName} (Vavoo Proxy)`
+          });
+          console.log(`✅ Added Vavoo proxy stream: ${vavooProxyUrl}`);
+        } else {
+          console.log(`❌ No Vavoo original link found for: ${channelName}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error getting Vavoo link for ${channelName}:`, error);
+      }
+    } else {
+      if (!channelName) console.log(`❌ No channel name for Vavoo lookup`);
+      if (!tvProxyUrl) console.log(`❌ No tvProxyUrl configured for Vavoo proxy`);
+    }
+
+    // 4. Stream Vavoo dinamico risolto direttamente (per test/backup)
+    // TODO: Implementare resolveVavooStream se necessario
+    /*
+    if (channelName) {
+      try {
+        console.log(`🔍 Trying to resolve Vavoo stream directly for: ${channelName}`);
+        const resolvedVavoo = await resolveVavooStream(channelName);
+        if (resolvedVavoo) {
+          streams.push({
+            url: resolvedVavoo,
+            title: `${channelName} (Vavoo Direct)`
+          });
+          console.log(`✅ Added resolved Vavoo stream: ${resolvedVavoo}`);
+        } else {
+          console.log(`❌ No resolved Vavoo stream found for: ${channelName}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error resolving Vavoo stream for ${channelName}:`, error);
+      }
+    }
+    */
+
+    console.log(`✅ Returning ${streams.length} streams for TV channel ${id}`);
+    res.json({ streams });
+});
+
+// Monta il router del SDK per gestire le richieste di configurazione dinamica
+app.use('/:config', (req: Request, res: Response, next: NextFunction) => {
+    const configStr = req.params.config;
+    
+    // Verifica se è una richiesta per manifest, catalog, meta o stream (MA NON TV)
+    if ((req.path.includes('/manifest.json') || 
+         req.path.includes('/catalog/') || 
+         req.path.includes('/meta/') || 
+         req.path.includes('/stream/')) &&
+        !req.path.includes('/stream/tv/')) { // Escludi TV streams che sono gestiti dalle route custom
+        
+        console.log(`🔧 SDK Router Request: ${req.method} ${req.url}`);
+        
+        try {
+            const config = parseConfigFromArgs(configStr);
+            console.log(`🔧 Parsed config for SDK router:`, !!config);
+            
+            // Crea il builder con la configurazione
+            const builder = createBuilder(config);
+            const addonInterface = builder.getInterface();
+            const router = getRouter(addonInterface);
+            
+            // Rimuovi il prefisso config dall'URL per il router del SDK
+            const originalUrl = req.url;
+            req.url = req.url.replace(`/${configStr}`, '');
+            
+            console.log(`🔧 Forwarding to SDK router: ${req.url}`);
+            
+            router(req, res, (err: any) => {
+                if (err) {
+                    console.error(`❌ SDK Router error:`, err);
+                    res.status(500).json({ error: "SDK router error" });
+                } else {
+                    console.log(`✅ SDK Router handled request successfully`);
+                }
+            });
+        } catch (error) {
+            console.error(`❌ Error in SDK router:`, error);
+            res.status(500).json({ error: "Configuration error" });
+        }
+    } else {
+        next();
+    }
+});
+
 // Landing page
 app.get('/', async (_: Request, res: Response) => {
     const manifest = loadCustomConfig();
@@ -1093,161 +1292,6 @@ app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
         console.log(`❌ No meta found for TV channel ID: ${id} (cleaned: ${cleanId})`);
         res.status(404).json({ error: 'Channel not found' });
     }
-});
-
-app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
-    const configStr = req.params.config;
-    const id = req.params.id;
-    const config = parseConfigFromArgs(configStr);
-    
-    console.log(`🎬 TV STREAM REQUEST: id=${id}, config parsed:`, !!config);
-    
-    console.log(`========= TV STREAM REQUEST (SPECIFIC) =========`);
-    console.log(`Channel ID: ${id}`);
-    console.log(`Config received:`, JSON.stringify(config, null, 2));
-    
-    // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-    console.log(`Clean ID for lookup: ${cleanId}`);
-    
-    const channel = tvChannels.find((c: any) => c.id === cleanId);
-    if (!channel) {
-        console.log(`❌ Channel ${id} (cleaned: ${cleanId}) not found in tvChannels`);
-        res.status(404).json({ error: 'Channel not found' });
-        return;
-    }
-    
-    console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
-    
-    const streams: { url: string; title: string }[] = [];
-    const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
-                 (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
-    const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
-    const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
-    const staticUrl = (channel as any).staticUrl;
-
-    console.log(`🔧 Configuration:`);
-    console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
-    console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
-    console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
-    console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
-
-    // Controlla se il canale è in chiaro (da rai1 a rai4k)
-    const isFreeToAir = isFreeToAirChannel(cleanId);
-    console.log(`🔧 Channel ${cleanId} is free to air: ${isFreeToAir}`);
-
-    // 1. Stream via staticUrl (MPD o HLS)
-    if (staticUrl) {
-      if (isFreeToAir) {
-        // Per canali in chiaro, usa direttamente il staticUrl senza MFP
-        streams.push({
-          url: staticUrl,
-          title: `${(channel as any).name} (MPD)`
-        });
-        console.log(`✅ Added direct staticUrl for free-to-air channel: ${staticUrl}`);
-      } else if (mfpUrl && mfpPsw) {
-        // Per canali non in chiaro, usa MFP proxy
-        let proxyUrl: string;
-        if (staticUrl.includes('.mpd')) {
-          // Per file MPD usiamo il proxy MPD
-          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-        } else {
-          // Per altri stream usiamo il proxy stream normale
-          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-        }
-        streams.push({
-          url: proxyUrl,
-          title: `${(channel as any).name} (MPD)`
-        });
-        console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
-      } else {
-        console.log(`❌ Cannot create stream: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-      }
-    } else {
-      console.log(`❌ No staticUrl available for channel ${cleanId}`);
-    }
-
-    // 2. Stream via staticUrl2 (seconda URL statica)
-    const staticUrl2 = (channel as any).staticUrl2;
-    if (staticUrl2) {
-      if (isFreeToAir) {
-        // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
-        streams.push({
-          url: staticUrl2,
-          title: `${(channel as any).name} (MPD HD)`
-        });
-        console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
-      } else if (mfpUrl && mfpPsw) {
-        // Per canali non in chiaro, usa MFP proxy
-        let proxyUrl: string;
-        if (staticUrl2.includes('.mpd')) {
-          // Per file MPD usiamo il proxy MPD
-          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-        } else {
-          // Per altri stream usiamo il proxy stream normale
-          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-        }
-        streams.push({
-          url: proxyUrl,
-          title: `${(channel as any).name} (MPD HD)`
-        });
-        console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
-      } else {
-        console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-      }
-    }
-
-        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
-    if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
-        try {
-            console.log(`[TV] Trying Vavoo original link for ${id}`);
-            console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
-            console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
-            
-            // Prova tutti i nomi Vavoo per questo canale
-            let vavooResolved = false;
-            for (const vavooName of (channel as any).vavooNames) {
-                if (vavooResolved) break; // Esce al primo successo
-                
-                console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
-                try {
-                  const originalLink = await getVavooOriginalLink(vavooName);
-                  console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
-                  
-                  if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
-                    // Passa il link Vavoo originale al proxy (NON quello risolto)
-                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
-                    streams.push({
-                      url: vavooUrl,
-                      title: `${(channel as any).name} (V)`
-                    });
-                    console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
-                    vavooResolved = true;
-                  } else {
-                    console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
-                  }
-                } catch (vavooError) {
-                  console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
-                }
-            }
-            
-            if (!vavooResolved) {
-                console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
-            }
-        } catch (error) {
-            console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
-        }
-    } else {
-        console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
-    }
-
-    console.log(`🔍 Total streams generated: ${streams.length}`);
-    streams.forEach((stream, index) => {
-        console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
-    });
-    
-    console.log(`========= END TV STREAM REQUEST (SPECIFIC) =========`);
-    res.json({ streams });
 });
 
 // Endpoint per ottenere statistiche EPG (deve essere prima degli endpoint dinamici)
