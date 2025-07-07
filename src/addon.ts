@@ -1124,7 +1124,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
           const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
           streams.push({
             url: vavooProxyUrl,
-            title: `${channelName} (Vavoo Proxy)`
+            title: `${channelName} (V)`
           });
           console.log(`✅ Added Vavoo proxy stream: ${vavooProxyUrl}`);
         } else {
