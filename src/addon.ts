@@ -380,80 +380,124 @@ if (epgConfig.enabled) {
             });
         }
     }, 1000); // Ritarda di 1 secondo per permettere al server di avviarsi
+    
+    // Programma aggiornamenti periodici dell'EPG (ogni 6 ore)
+    setInterval(() => {
+        if (epgManager) {
+            console.log(`🔄 Aggiornamento EPG periodico avviato...`);
+            epgManager.updateEPG().then(success => {
+                if (success) {
+                    console.log(`✅ EPG aggiornato periodicamente con successo`);
+                } else {
+                    console.log(`⚠️ Aggiornamento EPG periodico fallito`);
+                }
+            }).catch(error => {
+                console.error(`❌ Errore durante l'aggiornamento EPG periodico:`, error);
+            });
+        }
+    }, epgConfig.updateInterval); // Usa l'intervallo configurato (6 ore)
 }
 
-// Funzione per determinare se un canale è in chiaro (da rai1 a rai4k)
+// Funzione per determinare se un canale è in chiaro (canali italiani gratuiti)
 function isFreeToAirChannel(channelId: string): boolean {
-  // Canali in chiaro da rai1 a rai4k come richiesto
+  // Canali in chiaro italiani come richiesto dall'utente
   const freeToAirIds = [
+    // Canali RAI (pubblici)
     'rai1', 'rai2', 'rai3', 'rai4', 'rai5', 'raimovie', 'raipremium', 'raigulp', 'raiyoyo', 
-    'rainews24', 'raistoria', 'raiscuola', 'raisport', 'rai4k'
+    'rainews24', 'raistoria', 'raiscuola', 'raisport', 'rai4k',
+    // Canali Mediaset (privati ma in chiaro)
+    'rete4', 'canale5', 'italia1', '20mediaset', 'iris', 'la5', 'twentyseven', 'cine34', 
+    'focus', 'topcrime', 'boing', 'cartoonito', 'super', 'italia2', 'tgcom24', 'mediasetextra',
+    // Altri canali in chiaro
+    'la7', 'la7d', 'tv8', 'nove', 'cielo', 'tv2000', 'realtime', 'qvc', 'foodnetwork', 
+    'warnertv', 'giallo', 'k2', 'frisbee', 'dmax', 'hgtv', 'motortrend', 'rtl1025tv',
+    'sportitalia', 'donnatv', 'supertennis'
   ];
   return freeToAirIds.includes(channelId);
 }
 
-// Funzione per determinare la categoria di un canale
+// Funzione per determinare le categorie di un canale (supporta categorie multiple)
+function getChannelCategories(channel: any): string[] {
+  const categories: string[] = [];
+  
+  // Se il canale ha già categorie definite come array, usale
+  if (Array.isArray(channel.categories)) {
+    categories.push(...channel.categories);
+  }
+  // Se il canale ha una singola categoria definita, aggiungila
+  else if (channel.category) {
+    categories.push(channel.category);
+  }
+  
+  // Se non ci sono categorie esplicite, determina automaticamente
+  if (categories.length === 0) {
+    const name = channel.name.toLowerCase();
+    const description = channel.description.toLowerCase();
+    
+    // RAI
+    if (name.includes('rai') || description.includes('rai')) {
+      categories.push('rai');
+    }
+    
+    // Mediaset
+    if (name.includes('mediaset') || description.includes('mediaset') || 
+        name.includes('canale 5') || name.includes('italia') || name.includes('rete 4') ||
+        name.includes('iris') || name.includes('focus') || name.includes('cine34') ||
+        name.includes('boing') || name.includes('cartoonito') || name.includes('super') ||
+        name.includes('tgcom') || name.includes('mediaset extra')) {
+      categories.push('mediaset');
+    }
+    
+    // Sky
+    if (name.includes('sky') || description.includes('sky') || 
+        name.includes('uno') || name.includes('serie') || name.includes('atlantic') || 
+        name.includes('crime') || name.includes('investigation') || name.includes('documentaries') || 
+        name.includes('nature') || name.includes('arte') || name.includes('mtv') || 
+        name.includes('comedy') || name.includes('eurosport') || name.includes('nick') || 
+        name.includes('cartoon') || name.includes('boomerang') || name.includes('deakids') || 
+        name.includes('adventure')) {
+      categories.push('sky');
+    }
+    
+    // Bambini
+    if (name.includes('gulp') || name.includes('yoyo') || name.includes('frisbee') ||
+        name.includes('k2') || name.includes('boing') || name.includes('cartoonito') ||
+        name.includes('super') || name.includes('nick') || name.includes('cartoon') ||
+        name.includes('boomerang') || name.includes('deakids')) {
+      categories.push('kids');
+    }
+    
+    // News
+    if (name.includes('news') || name.includes('tg') || name.includes('focus') ||
+        name.includes('rainews') || name.includes('skytg') || name.includes('tgcom')) {
+      categories.push('news');
+    }
+    
+    // Sport
+    if (name.includes('sport') || name.includes('tennis') || name.includes('eurosport') ||
+        name.includes('raisport') || name.includes('sportitalia') || name.includes('supertennis')) {
+      categories.push('sport');
+    }
+    
+    // Cinema
+    if (name.includes('cinema') || name.includes('movie') || name.includes('warner') ||
+        name.includes('giallo') || name.includes('top crime')) {
+      categories.push('movies');
+    }
+    
+    // Se nessuna categoria specifica è stata trovata, aggiungi general
+    if (categories.length === 0) {
+      categories.push('general');
+    }
+  }
+  
+  return categories;
+}
+
+// Funzione per retrocompatibilità (mantiene la prima categoria)
 function getChannelCategory(channel: any): string {
-  // Se il canale ha già una categoria definita, usala
-  if (channel.category) {
-    return channel.category;
-  }
-  
-  const name = channel.name.toLowerCase();
-  const description = channel.description.toLowerCase();
-  
-  // RAI
-  if (name.includes('rai') || description.includes('rai')) {
-    return 'rai';
-  }
-  
-  // Mediaset
-  if (name.includes('mediaset') || description.includes('mediaset') || 
-      name.includes('canale 5') || name.includes('italia') || name.includes('rete 4') ||
-      name.includes('iris') || name.includes('focus') || name.includes('cine34') ||
-      name.includes('boing') || name.includes('cartoonito') || name.includes('super') ||
-      name.includes('tgcom') || name.includes('mediaset extra')) {
-    return 'mediaset';
-  }
-  
-  // Sky
-  if (name.includes('sky') || description.includes('sky') || 
-      name.includes('cinema') || name.includes('sport') || name.includes('uno') ||
-      name.includes('serie') || name.includes('atlantic') || name.includes('crime') ||
-      name.includes('investigation') || name.includes('documentaries') || name.includes('nature') ||
-      name.includes('arte') || name.includes('mtv') || name.includes('comedy') ||
-      name.includes('eurosport') || name.includes('nick') || name.includes('cartoon') ||
-      name.includes('boomerang') || name.includes('deakids') || name.includes('adventure')) {
-    return 'sky';
-  }
-  
-  // Bambini
-  if (name.includes('gulp') || name.includes('yoyo') || name.includes('frisbee') ||
-      name.includes('k2') || name.includes('boing') || name.includes('cartoonito') ||
-      name.includes('super') || name.includes('nick') || name.includes('cartoon') ||
-      name.includes('boomerang') || name.includes('deakids')) {
-    return 'kids';
-  }
-  
-  // News
-  if (name.includes('news') || name.includes('tg') || name.includes('focus') ||
-      name.includes('rainews') || name.includes('skytg') || name.includes('tgcom')) {
-    return 'news';
-  }
-  
-  // Sport
-  if (name.includes('sport') || name.includes('tennis') || name.includes('eurosport') ||
-      name.includes('raisport') || name.includes('sportitalia') || name.includes('supertennis')) {
-    return 'sport';
-  }
-  
-  // Cinema
-  if (name.includes('cinema') || name.includes('movie') || name.includes('warner') ||
-      name.includes('giallo') || name.includes('top crime')) {
-    return 'movies';
-  }
-  
-  return 'general';
+  const categories = getChannelCategories(channel);
+  return categories[0] || 'general';
 }
 
 // Aggiorna i canali con i link Vavoo dalla M3U
@@ -513,7 +557,11 @@ function createBuilder(config: AddonConfig = {}) {
           
           const targetCategory = genreMap[genre];
           if (targetCategory) {
-            filteredChannels = tvChannels.filter((channel: any) => getChannelCategory(channel) === targetCategory);
+            // Filtra i canali che hanno la categoria target (supporta categorie multiple)
+            filteredChannels = tvChannels.filter((channel: any) => {
+              const categories = getChannelCategories(channel);
+              return categories.includes(targetCategory);
+            });
             console.log(`✅ Filtered to ${filteredChannels.length} channels in category: ${targetCategory}`);
           } else {
             console.log(`⚠️ Unknown genre: ${genre}`);
@@ -545,38 +593,66 @@ function createBuilder(config: AddonConfig = {}) {
           const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
           const channel = tvChannels.find((c: any) => c.id === cleanId);
           if (channel) {
+            console.log(`✅ Found channel for meta: ${channel.name} (id: ${cleanId})`);
+            
             const metaWithPrefix = {
               ...channel,
               id: `tv:${channel.id}`,
               posterShape: "landscape"
             };
-            // EPG logic (as before)
+            
+            // EPG logic - SEMPRE INCLUDI EPG NEL META
             if (epgManager) {
               try {
+                console.log(`🔍 Checking EPG for channel: ${channel.name}`);
                 const epgChannelIds = (channel as any).epgChannelIds;
                 const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+                
                 if (epgChannelId) {
+                  console.log(`✅ Found EPG channel ID: ${epgChannelId}`);
                   const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
                   const nextProgram = await epgManager.getNextProgram(epgChannelId);
+                  
                   let epgDescription = channel.description || '';
+                  
                   if (currentProgram) {
                     const startTime = epgManager.formatTime(currentProgram.start);
                     const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
                     epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
-                    if (currentProgram.description) epgDescription += `\n${currentProgram.description}`;
+                    if (currentProgram.description) {
+                      epgDescription += `\n${currentProgram.description}`;
+                    }
+                    console.log(`✅ Added current program: ${currentProgram.title}`);
+                  } else {
+                    console.log(`⚠️ No current program found for ${epgChannelId}`);
                   }
+                  
                   if (nextProgram) {
                     const nextStartTime = epgManager.formatTime(nextProgram.start);
                     const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
                     epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
-                    if (nextProgram.description) epgDescription += `\n${nextProgram.description}`;
+                    if (nextProgram.description) {
+                      epgDescription += `\n${nextProgram.description}`;
+                    }
+                    console.log(`✅ Added next program: ${nextProgram.title}`);
+                  } else {
+                    console.log(`⚠️ No next program found for ${epgChannelId}`);
                   }
+                  
                   metaWithPrefix.description = epgDescription;
+                  console.log(`✅ Updated description with EPG data`);
+                } else {
+                  console.log(`❌ No EPG channel ID found for: ${channel.name}`);
+                  console.log(`   Searched with epgChannelIds:`, epgChannelIds);
                 }
               } catch (epgError) {
                 console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
               }
+            } else {
+              console.log(`❌ EPG Manager not available`);
             }
+            
+            console.log(`✅ Returning meta with EPG for channel: ${channel.name}`);
             return { meta: metaWithPrefix };
           } else {
             console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
@@ -645,9 +721,9 @@ function createBuilder(config: AddonConfig = {}) {
               meta = {
                 id,
                 type,
-                name: info.streams[0].title + ' [AS]',
+                name: info.streams[0].title,
                 poster: '',
-                description: info.streams[0].title + ' [AS]',
+                description: info.streams[0].title,
               };
               console.log(`[AnimeSaturn] Meta result:`, meta);
             }
@@ -667,9 +743,9 @@ function createBuilder(config: AddonConfig = {}) {
             const meta = {
               id,
               type,
-              name: s.name + ' [Vx]',
+              name: s.name,
               poster: '',
-              description: s.name + ' [Vx]',
+              description: s.name,
             };
             console.log(`[Vixsrc] Meta result:`, meta);
             return { meta };
@@ -760,12 +836,14 @@ function createBuilder(config: AddonConfig = {}) {
                 if (result && Array.isArray(result)) {
                   saturnStreams = (result as Stream[]).map(s => ({
                     ...s,
-                    title: s.title + ' [AS]'
+                    name: 'StreamViX [AS]',
+                    title: s.title
                   }));
                 } else if (result && result.streams && Array.isArray(result.streams)) {
                   saturnStreams = (result.streams as Stream[]).map(s => ({
                     ...s,
-                    title: s.title + ' [AS]'
+                    name: 'StreamViX [AS]',
+                    title: s.title
                   }));
                 }
                 if (saturnStreams && saturnStreams.length) {
@@ -794,14 +872,16 @@ function createBuilder(config: AddonConfig = {}) {
                   if (s.source === 'proxy') {
                     hasProxy = true;
                     mapped.push({
-                      title: `${s.name} [Vx]`,
+                      name: 'StreamViX [Vx]',
+                      title: s.name,
                       url: s.streamUrl,
                       headers: s.referer ? { Referer: s.referer } : undefined
                     });
                   }
                   if (s.source === 'direct' && config.bothLinks === 'on') {
                     mapped.push({
-                      title: `${s.name} [Vx][Direct]`,
+                      name: 'StreamViX [Vx][Direct]',
+                      title: s.name,
                       url: s.streamUrl,
                       headers: s.referer ? { Referer: s.referer } : undefined
                     });
@@ -812,7 +892,8 @@ function createBuilder(config: AddonConfig = {}) {
                   const direct = vixStreams.find(s => s.source === 'direct');
                   if (direct) {
                     mapped.push({
-                      title: `${direct.name} [Vx]`,
+                      name: 'StreamViX [Vx]',
+                      title: direct.name,
                       url: direct.streamUrl,
                       headers: direct.referer ? { Referer: direct.referer } : undefined
                     });
@@ -1017,7 +1098,22 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       }
     }
 
-    // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
+    // 3. Stream via staticUrlD (D di Daddy) - SEMPRE con TV Proxy
+    const staticUrlD = (channel as any).staticUrlD;
+    if (staticUrlD && tvProxyUrl) {
+      const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
+      streams.push({
+        url: daddyProxyUrl,
+        title: `${(channel as any).name} (D)`
+      });
+      console.log(`✅ Added Daddy proxy stream: ${daddyProxyUrl}`);
+    } else {
+      if (staticUrlD && !tvProxyUrl) {
+        console.log(`❌ staticUrlD available but no tvProxyUrl configured for channel ${cleanId}`);
+      }
+    }
+
+    // 4. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
     const channelName = (channel as any).name;
     if (channelName && tvProxyUrl) {
       try {
@@ -1232,7 +1328,11 @@ app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
             
             const targetCategory = genreMap[genre];
             if (targetCategory) {
-                filteredChannels = tvChannels.filter((channel: any) => getChannelCategory(channel) === targetCategory);
+                // Filtra i canali che hanno la categoria target (supporta categorie multiple)
+                filteredChannels = tvChannels.filter((channel: any) => {
+                    const categories = getChannelCategories(channel);
+                    return categories.includes(targetCategory);
+                });
                 console.log(`✅ Filtered to ${filteredChannels.length} channels in category: ${targetCategory}`);
             } else {
                 console.log(`⚠️ Unknown genre: ${genre}`);
@@ -1316,32 +1416,7 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
 });
 
 // Aggiungiamo anche l'endpoint specifico per TV come MammaMia
-app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
-    const configStr = req.params.config;
-    const id = req.params.id;
-    const config = parseConfigFromArgs(configStr);
-    
-    console.log(`📺 META TV REQUEST: id=${id}, config parsed:`, !!config);
-    
-    // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-    console.log(`Clean ID for lookup: ${cleanId}`);
-    
-    const channel = tvChannels.find((c: any) => c.id === cleanId);
-    if (channel) {
-        console.log(`✅ Found meta for TV channel: ${channel.name} (original id: ${cleanId})`);
-        // Mantieni l'ID originale con prefisso nella risposta
-        const metaWithPrefix = {
-            ...channel,
-            id: `tv:${channel.id}`,
-            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
-        };
-        res.json({ meta: metaWithPrefix });
-    } else {
-        console.log(`❌ No meta found for TV channel ID: ${id} (cleaned: ${cleanId})`);
-        res.status(404).json({ error: 'Channel not found' });
-    }
-});
+// RIMOSSO: Handler custom meta TV - ora gestito dal builder SDK
 
 // Endpoint per ottenere statistiche EPG (deve essere prima degli endpoint dinamici)
 app.get('/epg/stats', (req: Request, res: Response) => {
@@ -1509,6 +1584,39 @@ app.post('/epg/update', async (req: Request, res: Response) => {
         res.status(500).json({
             success: false,
             error: 'Internal server error'
+        });
+    }
+});
+
+// Endpoint per aggiornare manualmente l'EPG (per debug)
+app.get('/epg/refresh', async (req: Request, res: Response) => {
+    if (!epgManager) {
+        res.status(503).json({ error: 'EPG not enabled' });
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Manual EPG refresh requested`);
+        const success = await epgManager.updateEPG();
+        if (success) {
+            const stats = epgManager.getStats();
+            res.json({ 
+                success: true, 
+                message: 'EPG refreshed successfully', 
+                stats,
+                refreshedAt: new Date().toISOString()
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'EPG refresh failed' 
+            });
+        }
+    } catch (error) {
+        console.error('Error refreshing EPG:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'EPG refresh error: ' + (error as Error).message 
         });
     }
 });
