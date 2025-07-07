@@ -1220,7 +1220,20 @@ app.get('/:config/meta/:type/:id.json', async (req: Request, res: Response) => {
             res.status(404).json({ error: 'Not found' });
         }
     } else {
-        res.status(404).json({ error: 'Not found' });
+        // Per altri tipi (movie, series, anime) usa il builder
+        try {
+            const builder = createBuilder(config);
+            const addonInterface = builder.getInterface();
+            const result = await addonInterface.get({ resource: 'meta', type, id }, config);
+            if (result && result.meta) {
+                res.json(result);
+            } else {
+                res.status(404).json({ error: 'Not found' });
+            }
+        } catch (error) {
+            console.error('❌ META ERROR:', error);
+            res.status(404).json({ error: 'Not found' });
+        }
     }
 });
 
@@ -1413,7 +1426,7 @@ app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) =>
         const builder = createBuilder(config);
         const addonInterface = builder.getInterface();
         
-        addonInterface.get({ resource: 'stream', type, id })
+        addonInterface.get({ resource: 'stream', type, id }, config)
             .then((result: any) => {
                 console.log(`🎬 STREAM RESULT:`, result);
                 res.json(result);
