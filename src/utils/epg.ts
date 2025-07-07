@@ -425,4 +425,5 @@ export class EPGManager {
             lastUpdate: this.lastUpdate?.toISOString() || null
         };
     }
+
 }
