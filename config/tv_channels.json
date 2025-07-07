@@ -1458,7 +1458,7 @@
     "id": "dazn1",
     "type": "tv",
     "name": "Dazn 1",
-    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/dazn-1-it.png",
+    "poster": "https://i.pinimg.com/736x/7e/78/4b/7e784b0cacc3ed5732b937ad8c466a77.jpg",
     "description": "Dazn 1",
     "staticUrlD": "https://thedaddy.click/stream/stream-877.php",
     "vavooNames": [
@@ -1470,9 +1470,9 @@
     "category": "sport"
   },
   {
-    "id": "dazn1",
+    "id": "dazn",
     "type": "tv",
-    "name": "Dazn 1",
+    "name": "Dazn",
     "poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/DAZN_logo.svg/1024px-DAZN_logo.svg.png",
     "description": "Dazn",
     "vavooNames": [
