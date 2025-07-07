@@ -689,11 +689,12 @@ function createBuilder(config: AddonConfig = {}) {
       async (
         { type, id }: { type: string; id: string },
         extra: any,
-        config: any
+        sdkConfig: any
       ): Promise<{ streams: Stream[] }> => {
         console.log('[HANDLER] Stream handler called:', { type, id });
         try {
-          console.log(`\uD83C\uDFAC STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
+          // Usa il config passato al createBuilder invece di quello del SDK
+          console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
           // --- MOVIE, SERIES, ANIME ---
           if (type === 'movie' || type === 'series') {
             if (id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) {
@@ -1049,6 +1050,9 @@ app.use('/:config', (req: Request, res: Response, next: NextFunction) => {
             req.url = req.url.replace(`/${configStr}`, '');
             
             console.log(`🔧 Forwarding to SDK router: ${req.url}`);
+            
+            // IMPORTANTE: Aggiungi la configurazione alla richiesta per gli handler
+            (req as any).addonConfig = config;
             
             router(req, res, (err: any) => {
                 if (err) {
