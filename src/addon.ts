@@ -778,7 +778,15 @@ function createBuilder(config: AddonConfig = {}) {
             }
             // Fallback: Vixsrc
             try {
-              const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, config);
+              // Configurazione specifica per Vixsrc extractor
+              const vixConfig: ExtractorConfig = {
+                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || '',
+                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+                mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+                bothLink: config.bothLinks === 'on'
+              };
+              
+              const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, vixConfig);
               let mapped: Stream[] = [];
               if (vixStreams && Array.isArray(vixStreams)) {
                 let hasProxy = false;
