@@ -195,7 +195,9 @@ function normalizeUnicodeToAscii(str: string): string {
 
 export class AnimeSaturnProvider {
   private kitsuProvider = new KitsuProvider();
-  constructor(private config: AnimeSaturnConfig) {}
+  constructor(private config: AnimeSaturnConfig) {
+    console.log('[AnimeSaturnProvider] Config:', this.config);
+  }
 
   // Ricerca tutte le versioni (AnimeSaturn non distingue SUB/ITA/CR, ma puoi inferirlo dal titolo)
   private async searchAllVersions(title: string, malId?: string): Promise<{ version: AnimeSaturnResult; language_type: string }[]> {
