@@ -582,130 +582,106 @@ function createBuilder(config: AddonConfig = {}) {
             console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
             return { meta: null };
           }
-        } else if (type === "movie" || type === "series") {
-          // --- ANIMEUNITY/ANIMESATURN LOGIC ---
-          try {
-            const animeUnityEnabled = (config.animeunityEnabled === 'on') || (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
-            const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
-            if ((id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) && (animeUnityEnabled || animeSaturnEnabled)) {
-              const bothLinkValue = config.bothLinks === 'on';
-              const animeUnityConfig: AnimeUnityConfig = {
-                enabled: animeUnityEnabled,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-                bothLink: bothLinkValue,
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
-              };
-              const animeSaturnConfig = {
-                enabled: animeSaturnEnabled,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-                bothLink: bothLinkValue,
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
-              };
-              let meta: any = null;
-              // AnimeUnity
-              if (animeUnityEnabled) {
-                try {
-                  const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
-                  let info = null;
-                  if (id.startsWith('kitsu:')) {
-                    info = await animeUnityProvider.handleKitsuRequest(id);
-                  } else if (id.startsWith('mal:')) {
-                    info = await animeUnityProvider.handleMalRequest(id);
-                  } else if (id.startsWith('tt')) {
-                    info = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
-                  } else if (id.startsWith('tmdb:')) {
-                    info = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
-                  }
-                  if (info && info.streams && info.streams.length > 0) {
-                    // Use the first stream as meta base (for now)
-                    meta = {
-                      id,
-                      type,
-                      name: info.streams[0].title,
-                      poster: '',
-                      description: info.streams[0].title,
-                    };
-                    console.log(`[AnimeUnity] Meta result:`, meta);
-                  }
-                } catch (err) {
-                  console.error('[AnimeUnity] Meta error:', err);
-                }
-              }
-              // AnimeSaturn fallback/merge
-              if ((!meta || !meta.name) && animeSaturnEnabled) {
-                try {
-                  const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
-                  const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
-                  let info = null;
-                  if (id.startsWith('kitsu:')) {
-                    info = await animeSaturnProvider.handleKitsuRequest(id);
-                  } else if (id.startsWith('mal:')) {
-                    info = await animeSaturnProvider.handleMalRequest(id);
-                  } else if (id.startsWith('tt')) {
-                    info = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
-                  } else if (id.startsWith('tmdb:')) {
-                    info = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
-                  }
-                  if (info && info.streams && info.streams.length > 0) {
-                    meta = {
-                      id,
-                      type,
-                      name: info.streams[0].title,
-                      poster: '',
-                      description: info.streams[0].title,
-                    };
-                    console.log(`[AnimeSaturn] Meta result:`, meta);
-                  }
-                } catch (err) {
-                  console.error('[AnimeSaturn] Meta error:', err);
-                }
-              }
-              if (meta) return { meta };
+        } else {
+          // --- logica movie/series/anime ---
+          let meta = null;
+          // Definizione variabili provider
+          const animeUnityEnabled = (config.animeunityEnabled === 'on') || (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
+          const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
+          const bothLinkValue = config.bothLinks === 'on';
+          const animeUnityConfig: AnimeUnityConfig = {
+            enabled: animeUnityEnabled,
+            mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+            mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+            bothLink: bothLinkValue,
+            tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+          };
+          const animeSaturnConfig = {
+            enabled: animeSaturnEnabled,
+            mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+            mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+            bothLink: bothLinkValue,
+            tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+          };
+          // AnimeUnity
+          if (animeUnityEnabled) {
+            const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
+            let info = null;
+            if (id.startsWith('kitsu:')) {
+              info = await animeUnityProvider.handleKitsuRequest(id);
+            } else if (id.startsWith('mal:')) {
+              info = await animeUnityProvider.handleMalRequest(id);
+            } else if (id.startsWith('tt')) {
+              info = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
+            } else if (id.startsWith('tmdb:')) {
+              info = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
             }
-            // --- Vixsrc fallback for movie/series ---
-            try {
-              const bothLinkValue = config.bothLinks === 'on';
-              const finalConfig: ExtractorConfig = {
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
-                mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
-                bothLink: bothLinkValue
+            if (info && info.streams && info.streams.length > 0) {
+              meta = {
+                id,
+                type,
+                name: info.streams[0].title,
+                poster: '',
+                description: info.streams[0].title,
               };
-              const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
-              if (res && res.length > 0) {
-                // Use the first stream as meta base (for now)
-                const s = res[0];
-                const meta = {
-                  id,
-                  type,
-                  name: s.name,
-                  poster: '',
-                  description: s.name,
-                };
-                console.log(`[Vixsrc] Meta result:`, meta);
-                return { meta };
-              }
-            } catch (err) {
-              console.error('[Vixsrc] Meta error:', err);
+              console.log(`[AnimeUnity] Meta result:`, meta);
             }
-            return { meta: null };
-          } catch (err) {
-            console.error('Meta extraction failed:', err);
-            return { meta: null };
           }
-          // Fallback finale
-          console.warn('No meta found for', { type, id });
-          return { meta: null };
-        } catch (err) {
-          console.error('Meta extraction failed:', err);
-          return { meta: null };
+          // AnimeSaturn fallback/merge
+          if ((!meta || !meta.name) && animeSaturnEnabled) {
+            const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
+            const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
+            let info = null;
+            if (id.startsWith('kitsu:')) {
+              info = await animeSaturnProvider.handleKitsuRequest(id);
+            } else if (id.startsWith('mal:')) {
+              info = await animeSaturnProvider.handleMalRequest(id);
+            } else if (id.startsWith('tt')) {
+              info = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
+            } else if (id.startsWith('tmdb:')) {
+              info = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+            }
+            if (info && info.streams && info.streams.length > 0) {
+              meta = {
+                id,
+                type,
+                name: info.streams[0].title,
+                poster: '',
+                description: info.streams[0].title,
+              };
+              console.log(`[AnimeSaturn] Meta result:`, meta);
+            }
+          }
+          if (meta) return { meta };
+          // --- Vixsrc fallback for movie/series ---
+          const finalConfig: ExtractorConfig = {
+            tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
+            mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
+            mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
+            bothLink: bothLinkValue
+          };
+          const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
+          if (res && res.length > 0) {
+            // Use the first stream as meta base (for now)
+            const s = res[0];
+            const meta = {
+              id,
+              type,
+              name: s.name,
+              poster: '',
+              description: s.name,
+            };
+            console.log(`[Vixsrc] Meta result:`, meta);
+            return { meta };
+          }
         }
-      } else {
-        // fallback: not found
+      } catch (err) {
+        console.error('Meta extraction failed:', err);
         return { meta: null };
       }
+      // Fallback finale
+      console.warn('No meta found for', { type, id });
+      return { meta: null };
     });
 
     // === HANDLER UNICO STREAM ===
