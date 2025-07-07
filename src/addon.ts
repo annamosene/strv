@@ -803,6 +803,9 @@ function createBuilder(config: AddonConfig = {}) {
           console.error('STREAM ERROR:', err);
           return { streams: [] };
         }
+        // Fallback finale
+        console.warn('No streams found for', { type, id });
+        return { streams: [] };
       }
     );
 
