@@ -537,157 +537,166 @@ function createBuilder(config: AddonConfig = {}) {
 
     // === HANDLER UNICO META ===
     builder.defineMetaHandler(async ({ type, id }: { type: string; id: string }) => {
-      console.log(`📺 META REQUEST: type=${type}, id=${id}`);
-      if (type === "tv") {
-        // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-        const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-        const channel = tvChannels.find((c: any) => c.id === cleanId);
-        if (channel) {
-          const metaWithPrefix = {
-            ...channel,
-            id: `tv:${channel.id}`,
-            posterShape: "landscape"
-          };
-          // EPG logic (as before)
-          if (epgManager) {
-            try {
-              const epgChannelIds = (channel as any).epgChannelIds;
-              const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
-              if (epgChannelId) {
-                const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
-                const nextProgram = await epgManager.getNextProgram(epgChannelId);
-                let epgDescription = channel.description || '';
-                if (currentProgram) {
-                  const startTime = epgManager.formatTime(currentProgram.start);
-                  const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
-                  epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
-                  if (currentProgram.description) epgDescription += `\n${currentProgram.description}`;
-                }
-                if (nextProgram) {
-                  const nextStartTime = epgManager.formatTime(nextProgram.start);
-                  const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
-                  epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
-                  if (nextProgram.description) epgDescription += `\n${nextProgram.description}`;
-                }
-                metaWithPrefix.description = epgDescription;
-              }
-            } catch (epgError) {
-              console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
-            }
-          }
-          return { meta: metaWithPrefix };
-        } else {
-          console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
-          return { meta: null };
-        }
-      } else if (type === "movie" || type === "series") {
-        // --- ANIMEUNITY/ANIMESATURN LOGIC ---
-        try {
-          const animeUnityEnabled = (config.animeunityEnabled === 'on') || (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
-          const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
-          if ((id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) && (animeUnityEnabled || animeSaturnEnabled)) {
-            const bothLinkValue = config.bothLinks === 'on';
-            const animeUnityConfig: AnimeUnityConfig = {
-              enabled: animeUnityEnabled,
-              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-              mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-              bothLink: bothLinkValue,
-              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+      console.log('[HANDLER] Meta handler called:', { type, id });
+      try {
+        console.log(`📺 META REQUEST: type=${type}, id=${id}`);
+        if (type === "tv") {
+          // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
+          const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+          const channel = tvChannels.find((c: any) => c.id === cleanId);
+          if (channel) {
+            const metaWithPrefix = {
+              ...channel,
+              id: `tv:${channel.id}`,
+              posterShape: "landscape"
             };
-            const animeSaturnConfig = {
-              enabled: animeSaturnEnabled,
-              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-              mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-              bothLink: bothLinkValue,
-              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
-            };
-            let meta: any = null;
-            // AnimeUnity
-            if (animeUnityEnabled) {
+            // EPG logic (as before)
+            if (epgManager) {
               try {
-                const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
-                let info = null;
-                if (id.startsWith('kitsu:')) {
-                  info = await animeUnityProvider.handleKitsuRequest(id);
-                } else if (id.startsWith('mal:')) {
-                  info = await animeUnityProvider.handleMalRequest(id);
-                } else if (id.startsWith('tt')) {
-                  info = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
-                } else if (id.startsWith('tmdb:')) {
-                  info = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                const epgChannelIds = (channel as any).epgChannelIds;
+                const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+                if (epgChannelId) {
+                  const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
+                  const nextProgram = await epgManager.getNextProgram(epgChannelId);
+                  let epgDescription = channel.description || '';
+                  if (currentProgram) {
+                    const startTime = epgManager.formatTime(currentProgram.start);
+                    const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
+                    epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
+                    if (currentProgram.description) epgDescription += `\n${currentProgram.description}`;
+                  }
+                  if (nextProgram) {
+                    const nextStartTime = epgManager.formatTime(nextProgram.start);
+                    const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
+                    epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
+                    if (nextProgram.description) epgDescription += `\n${nextProgram.description}`;
+                  }
+                  metaWithPrefix.description = epgDescription;
                 }
-                if (info && info.streams && info.streams.length > 0) {
-                  // Use the first stream as meta base (for now)
-                  meta = {
-                    id,
-                    type,
-                    name: info.streams[0].title,
-                    poster: '',
-                    description: info.streams[0].title,
-                  };
-                  console.log(`[AnimeUnity] Meta result:`, meta);
-                }
-              } catch (err) {
-                console.error('[AnimeUnity] Meta error:', err);
+              } catch (epgError) {
+                console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
               }
             }
-            // AnimeSaturn fallback/merge
-            if ((!meta || !meta.name) && animeSaturnEnabled) {
-              try {
-                const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
-                const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
-                let info = null;
-                if (id.startsWith('kitsu:')) {
-                  info = await animeSaturnProvider.handleKitsuRequest(id);
-                } else if (id.startsWith('mal:')) {
-                  info = await animeSaturnProvider.handleMalRequest(id);
-                } else if (id.startsWith('tt')) {
-                  info = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
-                } else if (id.startsWith('tmdb:')) {
-                  info = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
-                }
-                if (info && info.streams && info.streams.length > 0) {
-                  meta = {
-                    id,
-                    type,
-                    name: info.streams[0].title,
-                    poster: '',
-                    description: info.streams[0].title,
-                  };
-                  console.log(`[AnimeSaturn] Meta result:`, meta);
-                }
-              } catch (err) {
-                console.error('[AnimeSaturn] Meta error:', err);
-              }
-            }
-            if (meta) return { meta };
+            return { meta: metaWithPrefix };
+          } else {
+            console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
+            return { meta: null };
           }
-          // --- Vixsrc fallback for movie/series ---
+        } else if (type === "movie" || type === "series") {
+          // --- ANIMEUNITY/ANIMESATURN LOGIC ---
           try {
-            const bothLinkValue = config.bothLinks === 'on';
-            const finalConfig: ExtractorConfig = {
-              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
-              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
-              mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
-              bothLink: bothLinkValue
-            };
-            const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
-            if (res && res.length > 0) {
-              // Use the first stream as meta base (for now)
-              const s = res[0];
-              const meta = {
-                id,
-                type,
-                name: s.name,
-                poster: '',
-                description: s.name,
+            const animeUnityEnabled = (config.animeunityEnabled === 'on') || (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
+            const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
+            if ((id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) && (animeUnityEnabled || animeSaturnEnabled)) {
+              const bothLinkValue = config.bothLinks === 'on';
+              const animeUnityConfig: AnimeUnityConfig = {
+                enabled: animeUnityEnabled,
+                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+                bothLink: bothLinkValue,
+                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
               };
-              console.log(`[Vixsrc] Meta result:`, meta);
-              return { meta };
+              const animeSaturnConfig = {
+                enabled: animeSaturnEnabled,
+                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+                bothLink: bothLinkValue,
+                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+              };
+              let meta: any = null;
+              // AnimeUnity
+              if (animeUnityEnabled) {
+                try {
+                  const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
+                  let info = null;
+                  if (id.startsWith('kitsu:')) {
+                    info = await animeUnityProvider.handleKitsuRequest(id);
+                  } else if (id.startsWith('mal:')) {
+                    info = await animeUnityProvider.handleMalRequest(id);
+                  } else if (id.startsWith('tt')) {
+                    info = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
+                  } else if (id.startsWith('tmdb:')) {
+                    info = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                  }
+                  if (info && info.streams && info.streams.length > 0) {
+                    // Use the first stream as meta base (for now)
+                    meta = {
+                      id,
+                      type,
+                      name: info.streams[0].title,
+                      poster: '',
+                      description: info.streams[0].title,
+                    };
+                    console.log(`[AnimeUnity] Meta result:`, meta);
+                  }
+                } catch (err) {
+                  console.error('[AnimeUnity] Meta error:', err);
+                }
+              }
+              // AnimeSaturn fallback/merge
+              if ((!meta || !meta.name) && animeSaturnEnabled) {
+                try {
+                  const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
+                  const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
+                  let info = null;
+                  if (id.startsWith('kitsu:')) {
+                    info = await animeSaturnProvider.handleKitsuRequest(id);
+                  } else if (id.startsWith('mal:')) {
+                    info = await animeSaturnProvider.handleMalRequest(id);
+                  } else if (id.startsWith('tt')) {
+                    info = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
+                  } else if (id.startsWith('tmdb:')) {
+                    info = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                  }
+                  if (info && info.streams && info.streams.length > 0) {
+                    meta = {
+                      id,
+                      type,
+                      name: info.streams[0].title,
+                      poster: '',
+                      description: info.streams[0].title,
+                    };
+                    console.log(`[AnimeSaturn] Meta result:`, meta);
+                  }
+                } catch (err) {
+                  console.error('[AnimeSaturn] Meta error:', err);
+                }
+              }
+              if (meta) return { meta };
             }
+            // --- Vixsrc fallback for movie/series ---
+            try {
+              const bothLinkValue = config.bothLinks === 'on';
+              const finalConfig: ExtractorConfig = {
+                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
+                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
+                mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
+                bothLink: bothLinkValue
+              };
+              const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
+              if (res && res.length > 0) {
+                // Use the first stream as meta base (for now)
+                const s = res[0];
+                const meta = {
+                  id,
+                  type,
+                  name: s.name,
+                  poster: '',
+                  description: s.name,
+                };
+                console.log(`[Vixsrc] Meta result:`, meta);
+                return { meta };
+              }
+            } catch (err) {
+              console.error('[Vixsrc] Meta error:', err);
+            }
+            return { meta: null };
           } catch (err) {
-            console.error('[Vixsrc] Meta error:', err);
+            console.error('Meta extraction failed:', err);
+            return { meta: null };
           }
+          // Fallback finale
+          console.warn('No meta found for', { type, id });
           return { meta: null };
         } catch (err) {
           console.error('Meta extraction failed:', err);
@@ -706,8 +715,9 @@ function createBuilder(config: AddonConfig = {}) {
         extra: any,
         config: any
       ): Promise<{ streams: Stream[] }> => {
-        console.log(`\uD83C\uDFAC STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
+        console.log('[HANDLER] Stream handler called:', { type, id });
         try {
+          console.log(`\uD83C\uDFAC STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
           // --- MOVIE, SERIES, ANIME ---
           if (type === 'movie' || type === 'series') {
             if (id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) {
