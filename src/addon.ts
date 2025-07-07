@@ -781,29 +781,34 @@ function createBuilder(config: AddonConfig = {}) {
               const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, config);
               let mapped: Stream[] = [];
               if (vixStreams && Array.isArray(vixStreams)) {
-                const proxy = vixStreams.find(s => s.source === 'proxy');
-                const direct = vixStreams.find(s => s.source === 'direct');
-                if (proxy) {
-                  mapped.push({
-                    title: `${proxy.name} [Vx]`,
-                    url: proxy.streamUrl,
-                    headers: proxy.referer ? { Referer: proxy.referer } : undefined
-                  });
-                }
-                if (config.bothLinks === 'on' && direct) {
-                  mapped.push({
-                    title: `${direct.name} [Vx][Direct]`,
-                    url: direct.streamUrl,
-                    headers: direct.referer ? { Referer: direct.referer } : undefined
-                  });
-                }
-                // Se non c'è proxy, mostra almeno il direct
-                if (!proxy && direct) {
-                  mapped.push({
-                    title: `${direct.name} [Vx]`,
-                    url: direct.streamUrl,
-                    headers: direct.referer ? { Referer: direct.referer } : undefined
-                  });
+                let hasProxy = false;
+                vixStreams.forEach(s => {
+                  if (s.source === 'proxy') {
+                    hasProxy = true;
+                    mapped.push({
+                      title: `${s.name} [Vx]`,
+                      url: s.streamUrl,
+                      headers: s.referer ? { Referer: s.referer } : undefined
+                    });
+                  }
+                  if (s.source === 'direct' && config.bothLinks === 'on') {
+                    mapped.push({
+                      title: `${s.name} [Vx][Direct]`,
+                      url: s.streamUrl,
+                      headers: s.referer ? { Referer: s.referer } : undefined
+                    });
+                  }
+                });
+                // Se non c'è proxy, mostra almeno il direct come [Vx]
+                if (!hasProxy) {
+                  const direct = vixStreams.find(s => s.source === 'direct');
+                  if (direct) {
+                    mapped.push({
+                      title: `${direct.name} [Vx]`,
+                      url: direct.streamUrl,
+                      headers: direct.referer ? { Referer: direct.referer } : undefined
+                    });
+                  }
                 }
               }
               if (mapped.length) {
