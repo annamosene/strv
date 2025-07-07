@@ -620,9 +620,9 @@ function createBuilder(config: AddonConfig = {}) {
               meta = {
                 id,
                 type,
-                name: info.streams[0].title,
+                name: info.streams[0].title + ' [AU]',
                 poster: '',
-                description: info.streams[0].title,
+                description: info.streams[0].title + ' [AU]',
               };
               console.log(`[AnimeUnity] Meta result:`, meta);
             }
@@ -645,9 +645,9 @@ function createBuilder(config: AddonConfig = {}) {
               meta = {
                 id,
                 type,
-                name: info.streams[0].title,
+                name: info.streams[0].title + ' [AS]',
                 poster: '',
-                description: info.streams[0].title,
+                description: info.streams[0].title + ' [AS]',
               };
               console.log(`[AnimeSaturn] Meta result:`, meta);
             }
@@ -667,9 +667,9 @@ function createBuilder(config: AddonConfig = {}) {
             const meta = {
               id,
               type,
-              name: s.name,
+              name: s.name + ' [Vx]',
               poster: '',
-              description: s.name,
+              description: s.name + ' [Vx]',
             };
             console.log(`[Vixsrc] Meta result:`, meta);
             return { meta };
@@ -719,9 +719,15 @@ function createBuilder(config: AddonConfig = {}) {
                   result = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
                 }
                 if (result && Array.isArray(result)) {
-                  unityStreams = result as Stream[];
+                  unityStreams = (result as Stream[]).map(s => ({
+                    ...s,
+                    title: s.title + ' [AU]'
+                  }));
                 } else if (result && result.streams && Array.isArray(result.streams)) {
-                  unityStreams = result.streams as Stream[];
+                  unityStreams = (result.streams as Stream[]).map(s => ({
+                    ...s,
+                    title: s.title + ' [AU]'
+                  }));
                 }
                 if (unityStreams && unityStreams.length) {
                   console.log('[Stream] AnimeUnityProvider streams:', unityStreams);
@@ -752,9 +758,15 @@ function createBuilder(config: AddonConfig = {}) {
                   result = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
                 }
                 if (result && Array.isArray(result)) {
-                  saturnStreams = result as Stream[];
+                  saturnStreams = (result as Stream[]).map(s => ({
+                    ...s,
+                    title: s.title + ' [AS]'
+                  }));
                 } else if (result && result.streams && Array.isArray(result.streams)) {
-                  saturnStreams = result.streams as Stream[];
+                  saturnStreams = (result.streams as Stream[]).map(s => ({
+                    ...s,
+                    title: s.title + ' [AS]'
+                  }));
                 }
                 if (saturnStreams && saturnStreams.length) {
                   console.log('[Stream] AnimeSaturnProvider streams:', saturnStreams);
@@ -767,13 +779,35 @@ function createBuilder(config: AddonConfig = {}) {
             // Fallback: Vixsrc
             try {
               const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, config);
-              const mapped: Stream[] = (vixStreams && Array.isArray(vixStreams))
-                ? vixStreams.map(s => ({
-                    title: s.name,
-                    url: s.streamUrl,
-                    headers: s.referer ? { Referer: s.referer } : undefined
-                  }))
-                : [];
+              let mapped: Stream[] = [];
+              if (vixStreams && Array.isArray(vixStreams)) {
+                for (const s of vixStreams) {
+                  // Se proxy configurato, aggiungi link proxy
+                  if (config.mediaFlowProxyUrl && config.mediaFlowProxyPassword) {
+                    const proxyUrl = formatMediaFlowUrl(s.streamUrl, config.mediaFlowProxyUrl, config.mediaFlowProxyPassword);
+                    mapped.push({
+                      title: `${s.name} [Vx]`,
+                      url: proxyUrl,
+                      headers: s.referer ? { Referer: s.referer } : undefined
+                    });
+                    // Se bothLinks attivo, aggiungi anche il link diretto
+                    if (config.bothLinks === 'on') {
+                      mapped.push({
+                        title: `${s.name} [Vx][Direct]`,
+                        url: s.streamUrl,
+                        headers: s.referer ? { Referer: s.referer } : undefined
+                      });
+                    }
+                  } else {
+                    // Solo link diretto
+                    mapped.push({
+                      title: `${s.name} [Vx]`,
+                      url: s.streamUrl,
+                      headers: s.referer ? { Referer: s.referer } : undefined
+                    });
+                  }
+                }
+              }
               if (mapped.length) {
                 console.log('[Stream] Vixsrc streams:', mapped);
                 return { streams: mapped };
