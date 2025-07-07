@@ -781,25 +781,27 @@ function createBuilder(config: AddonConfig = {}) {
               const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, config);
               let mapped: Stream[] = [];
               if (vixStreams && Array.isArray(vixStreams)) {
-                for (const s of vixStreams) {
-                  // Se proxy configurato, aggiungi link proxy
-                  if (config.mediaFlowProxyUrl && config.mediaFlowProxyPassword) {
-                    const proxyUrl = formatMediaFlowUrl(s.streamUrl, config.mediaFlowProxyUrl, config.mediaFlowProxyPassword);
-                    mapped.push({
-                      title: `${s.name} [Vx]`,
-                      url: proxyUrl,
-                      headers: s.referer ? { Referer: s.referer } : undefined
-                    });
-                    // Se bothLinks attivo, aggiungi anche il link diretto
-                    if (config.bothLinks === 'on') {
+                // Prima aggiungi il proxy (se presente)
+                const proxy = vixStreams.find(s => s.source === 'proxy');
+                if (proxy) {
+                  mapped.push({
+                    title: `${proxy.name} [Vx]`,
+                    url: proxy.streamUrl,
+                    headers: proxy.referer ? { Referer: proxy.referer } : undefined
+                  });
+                  if (config.bothLinks === 'on') {
+                    const direct = vixStreams.find(s => s.source === 'direct');
+                    if (direct) {
                       mapped.push({
-                        title: `${s.name} [Vx][Direct]`,
-                        url: s.streamUrl,
-                        headers: s.referer ? { Referer: s.referer } : undefined
+                        title: `${direct.name} [Vx][Direct]`,
+                        url: direct.streamUrl,
+                        headers: direct.referer ? { Referer: direct.referer } : undefined
                       });
                     }
-                  } else {
-                    // Solo link diretto
+                  }
+                } else {
+                  // Solo direct
+                  for (const s of vixStreams) {
                     mapped.push({
                       title: `${s.name} [Vx]`,
                       url: s.streamUrl,
