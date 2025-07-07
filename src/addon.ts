@@ -700,59 +700,111 @@ function createBuilder(config: AddonConfig = {}) {
     });
 
     // === HANDLER UNICO STREAM ===
-    builder.defineStreamHandler(async ({ type, id }, extra, config) => {
+    builder.defineStreamHandler(
+      async (
+        { type, id }: { type: string; id: string },
+        extra: any,
+        config: any
+      ): Promise<{ streams: Stream[] }> => {
         console.log(`\uD83C\uDFAC STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
         try {
-            if (type === 'tv') {
-                // ... TV logic unchanged ...
-                return await handleTvStream(id, config);
-            }
-            // --- MOVIE, SERIES, ANIME ---
-            if (type === 'movie' || type === 'series') {
-                if (id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) {
-                    // Prova AnimeUnityProvider
-                    let unityStreams = [];
-                    try {
-                        unityStreams = await AnimeUnityProvider.getStreams(id, type, config);
-                        if (unityStreams && unityStreams.length) {
-                            console.log('[Stream] AnimeUnityProvider streams:', unityStreams);
-                            return { streams: unityStreams };
-                        }
-                    } catch (e) {
-                        console.warn('[Stream] AnimeUnityProvider error:', e);
-                    }
-                    // Prova AnimeSaturnProvider
-                    let saturnStreams = [];
-                    try {
-                        saturnStreams = await AnimeSaturnProvider.getStreams(id, type, config);
-                        if (saturnStreams && saturnStreams.length) {
-                            console.log('[Stream] AnimeSaturnProvider streams:', saturnStreams);
-                            return { streams: saturnStreams };
-                        }
-                    } catch (e) {
-                        console.warn('[Stream] AnimeSaturnProvider error:', e);
-                    }
+          // --- MOVIE, SERIES, ANIME ---
+          if (type === 'movie' || type === 'series') {
+            if (id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) {
+              // Prova AnimeUnityProvider
+              let unityStreams: Stream[] = [];
+              try {
+                const animeUnityProvider = new AnimeUnityProvider({
+                  enabled: config.animeunityEnabled === 'on',
+                  mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+                  mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+                  bothLink: config.bothLinks === 'on',
+                  tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+                });
+                let result: any = null;
+                if (id.startsWith('kitsu:')) {
+                  result = await animeUnityProvider.handleKitsuRequest(id);
+                } else if (id.startsWith('mal:')) {
+                  result = await animeUnityProvider.handleMalRequest(id);
+                } else if (id.startsWith('tt')) {
+                  result = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
+                } else if (id.startsWith('tmdb:')) {
+                  result = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
                 }
-                // Fallback: Vixsrc
-                try {
-                    const vixStreams = await getStreamContent(id, type, config);
-                    if (vixStreams && vixStreams.length) {
-                        console.log('[Stream] Vixsrc streams:', vixStreams);
-                        return { streams: vixStreams };
-                    }
-                } catch (e) {
-                    console.warn('[Stream] Vixsrc error:', e);
+                if (result && Array.isArray(result)) {
+                  unityStreams = result as Stream[];
+                } else if (result && result.streams && Array.isArray(result.streams)) {
+                  unityStreams = result.streams as Stream[];
                 }
-                // Nessuno stream trovato
-                return { streams: [] };
+                if (unityStreams && unityStreams.length) {
+                  console.log('[Stream] AnimeUnityProvider streams:', unityStreams);
+                  return { streams: unityStreams };
+                }
+              } catch (e) {
+                console.warn('[Stream] AnimeUnityProvider error:', e);
+              }
+              // Prova AnimeSaturnProvider
+              let saturnStreams: Stream[] = [];
+              try {
+                const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
+                const animeSaturnProvider = new AnimeSaturnProvider({
+                  enabled: config.animesaturnEnabled === 'on',
+                  mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+                  mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+                  bothLink: config.bothLinks === 'on',
+                  tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+                });
+                let result: any = null;
+                if (id.startsWith('kitsu:')) {
+                  result = await animeSaturnProvider.handleKitsuRequest(id);
+                } else if (id.startsWith('mal:')) {
+                  result = await animeSaturnProvider.handleMalRequest(id);
+                } else if (id.startsWith('tt')) {
+                  result = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
+                } else if (id.startsWith('tmdb:')) {
+                  result = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                }
+                if (result && Array.isArray(result)) {
+                  saturnStreams = result as Stream[];
+                } else if (result && result.streams && Array.isArray(result.streams)) {
+                  saturnStreams = result.streams as Stream[];
+                }
+                if (saturnStreams && saturnStreams.length) {
+                  console.log('[Stream] AnimeSaturnProvider streams:', saturnStreams);
+                  return { streams: saturnStreams };
+                }
+              } catch (e) {
+                console.warn('[Stream] AnimeSaturnProvider error:', e);
+              }
             }
-            // --- Altri tipi non gestiti ---
+            // Fallback: Vixsrc
+            try {
+              const vixStreams: VixCloudStreamInfo[] | null = await getStreamContent(id, type, config);
+              const mapped: Stream[] = (vixStreams && Array.isArray(vixStreams))
+                ? vixStreams.map(s => ({
+                    title: s.name,
+                    url: s.streamUrl,
+                    headers: s.referer ? { Referer: s.referer } : undefined
+                  }))
+                : [];
+              if (mapped.length) {
+                console.log('[Stream] Vixsrc streams:', mapped);
+                return { streams: mapped };
+              }
+            } catch (e) {
+              console.warn('[Stream] Vixsrc error:', e);
+            }
+            // Nessuno stream trovato
             return { streams: [] };
+          }
+          // --- Altri tipi non gestiti ---
+          return { streams: [] };
         } catch (err) {
-            console.error('STREAM ERROR:', err);
-            return { streams: [] };
+          console.error('STREAM ERROR:', err);
+          return { streams: [] };
         }
-    });
+      }
+    );
 
     return builder;
 }
