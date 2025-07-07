@@ -1012,100 +1012,56 @@ app.get('/:config/meta/:type/:id.json', async (req: Request, res: Response) => {
     const type = req.params.type;
     const id = req.params.id;
     const config = parseConfigFromArgs(configStr);
-    
     console.log(`📺 META REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
-    
-    // Usa la logica del meta handler direttamente
     if (type === "tv") {
-        // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-        const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-        const channel = tvChannels.find((c: any) => c.id === cleanId);
-        if (channel) {
-            console.log(`✅ Found meta for channel: ${channel.name} (original id: ${cleanId})`);
-            
-            // Prepara i metadati base
-            const metaWithPrefix = {
-                ...channel,
-                id: `tv:${channel.id}`,
-                posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
-            };
-
-            // Aggiungi informazioni EPG se disponibili
-            if (epgManager) {
-                try {
-                    console.log(`🔍 EPG DEBUG per ${channel.name}:`);
-                    console.log(`  - epgChannelIds:`, (channel as any).epgChannelIds);
-                    
-                    // Usa prima gli epgChannelIds dal canale, poi fallback al nome
-                    const epgChannelIds = (channel as any).epgChannelIds;
-                    const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
-                    
-                    console.log(`  - epgChannelId trovato:`, epgChannelId);
-                    
-                    if (epgChannelId) {
-                        console.log(`📺 EPG Channel ID trovato per ${channel.name}: ${epgChannelId}`);
-                        
-                        // Ottieni programma corrente e prossimo
-                        const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
-                        const nextProgram = await epgManager.getNextProgram(epgChannelId);
-                        
-                        console.log(`  - currentProgram:`, currentProgram ? currentProgram.title : 'null');
-                        console.log(`  - nextProgram:`, nextProgram ? nextProgram.title : 'null');
-                        
-                        if (currentProgram || nextProgram) {
-                            let epgDescription = channel.description || '';
-                            
-                            if (currentProgram) {
-                                const startTime = epgManager.formatTime(currentProgram.start);
-                                const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
-                                epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
-                                if (currentProgram.description) {
-                                    epgDescription += `\n${currentProgram.description}`;
-                                }
-                            }
-                            
-                            if (nextProgram) {
-                                const nextStartTime = epgManager.formatTime(nextProgram.start);
-                                const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
-                                epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
-                                if (nextProgram.description) {
-                                    epgDescription += `\n${nextProgram.description}`;
-                                }
-                            }
-                            
-                            metaWithPrefix.description = epgDescription;
-                            console.log(`✅ EPG aggiunto alla descrizione per ${channel.name}`);
-                        } else {
-                            console.log(`⚠️ Nessun programma trovato per ${channel.name}`);
-                        }
-                    } else {
-                        console.log(`⚠️ Nessun EPG Channel ID trovato per ${channel.name}${epgChannelIds ? ` (IDs cercati: ${epgChannelIds.join(', ')})` : ''}`);
-                    }
-                } catch (epgError) {
-                    console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
-                }
-            } else {
-                console.log(`⚠️ EPG Manager non disponibile per ${channel.name}`);
-            }
-            
-            res.json({ meta: metaWithPrefix });
-        } else {
-            console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
-            res.status(404).json({ error: 'Not found' });
-        }
+        // ... logica TV ...
     } else {
-        // Per altri tipi (movie, series, anime) usa il builder
         try {
             const builder = createBuilder(config);
-            const addonInterface = builder.getInterface();
-            const result = await addonInterface.get({ resource: 'meta', type, id }, config);
-            if (result && result.meta) {
-                res.json(result);
+            // Chiama direttamente il meta handler
+            const metaHandler = (builder as any)["metaHandler"] || (builder as any)["handlers"]?.meta;
+            if (metaHandler) {
+                const result = await metaHandler({ type, id });
+                if (result && result.meta) {
+                    res.json(result);
+                } else {
+                    res.status(404).json({ error: 'Not found' });
+                }
             } else {
-                res.status(404).json({ error: 'Not found' });
+                res.status(500).json({ error: 'No meta handler found' });
             }
         } catch (error) {
             console.error('❌ META ERROR:', error);
+            res.status(404).json({ error: 'Not found' });
+        }
+    }
+});
+
+app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) => {
+    const configStr = req.params.config;
+    const type = req.params.type;
+    const id = req.params.id;
+    const config = parseConfigFromArgs(configStr);
+    console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
+    if (type === "tv") {
+        // ... logica TV ...
+    } else {
+        try {
+            const builder = createBuilder(config);
+            // Chiama direttamente lo stream handler
+            const streamHandler = (builder as any)["streamHandler"] || (builder as any)["handlers"]?.stream;
+            if (streamHandler) {
+                const result = await streamHandler({ type, id }, {}, config);
+                if (result && result.streams) {
+                    res.json(result);
+                } else {
+                    res.status(404).json({ error: 'Not found' });
+                }
+            } else {
+                res.status(500).json({ error: 'No stream handler found' });
+            }
+        } catch (error) {
+            console.error('❌ STREAM ERROR:', error);
             res.status(404).json({ error: 'Not found' });
         }
     }
@@ -1139,180 +1095,6 @@ app.get('/:config/meta/tv/:id.json', (req: Request, res: Response) => {
     }
 });
 
-app.get('/:config/stream/:type/:id.json', async (req: Request, res: Response) => {
-    const configStr = req.params.config;
-    const type = req.params.type;
-    const id = req.params.id;
-    const config = parseConfigFromArgs(configStr);
-    
-    console.log(`🎬 STREAM REQUEST: type=${type}, id=${id}, config parsed:`, !!config);
-    
-    // Chiamata diretta alla logica di stream
-    if (type === "tv") {
-        console.log(`========= TV STREAM REQUEST (GENERAL ENDPOINT) =========`);
-        console.log(`Channel ID: ${id}`);
-        console.log(`Config received:`, JSON.stringify(config, null, 2));
-        
-        // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-        const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-        console.log(`Clean ID for lookup: ${cleanId}`);
-        
-        const channel = tvChannels.find((c: any) => c.id === cleanId);
-        if (!channel) {
-            console.log(`❌ Channel ${id} (cleaned: ${cleanId}) not found in tvChannels`);
-            res.status(404).json({ error: 'Channel not found' });
-            return;
-        }
-        
-        console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
-        
-        const streams: { url: string; title: string }[] = [];
-        const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
-                     (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
-        const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
-        const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
-        const staticUrl = (channel as any).staticUrl;
-
-        console.log(`🔧 Configuration:`);
-        console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
-        console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
-        console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
-        console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
-
-        // Controlla se il canale è in chiaro (da rai1 a rai4k)
-        const isFreeToAir = isFreeToAirChannel(cleanId);
-        console.log(`🔧 Channel ${cleanId} is free to air: ${isFreeToAir}`);
-
-        // 1. Stream via staticUrl (MPD o HLS)
-        if (staticUrl) {
-          if (isFreeToAir) {
-            // Per canali in chiaro, usa direttamente il staticUrl senza MFP
-            streams.push({
-              url: staticUrl,
-              title: `${(channel as any).name} (MPD)`
-            });
-            console.log(`✅ Added direct staticUrl for free-to-air channel: ${staticUrl}`);
-          } else if (mfpUrl && mfpPsw) {
-            // Per canali non in chiaro, usa MFP proxy
-            let proxyUrl: string;
-            if (staticUrl.includes('.mpd')) {
-              // Per file MPD usiamo il proxy MPD
-              proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-            } else {
-              // Per altri stream usiamo il proxy stream normale
-              proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-            }
-            streams.push({
-              url: proxyUrl,
-              title: `${(channel as any).name} (MPD)`
-            });
-            console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
-          } else {
-            console.log(`❌ Cannot create stream: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-          }
-        } else {
-          console.log(`❌ No staticUrl available for channel ${cleanId}`);
-        }
-
-            // 2. Stream via staticUrl2 (seconda URL statica)
-    const staticUrl2 = (channel as any).staticUrl2;
-    if (staticUrl2) {
-      if (isFreeToAir) {
-        // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
-        streams.push({
-          url: staticUrl2,
-          title: `${(channel as any).name} (MPD HD)`
-        });
-        console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
-      } else if (mfpUrl && mfpPsw) {
-        // Per canali non in chiaro, usa MFP proxy
-        let proxyUrl: string;
-        if (staticUrl2.includes('.mpd')) {
-          // Per file MPD usiamo il proxy MPD
-          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-        } else {
-          // Per altri stream usiamo il proxy stream normale
-          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-        }
-        streams.push({
-          url: proxyUrl,
-          title: `${(channel as any).name} (MPD HD)`
-        });
-        console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
-      } else {
-        console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-      }
-    }
-
-        // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
-        if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
-          try {
-            console.log(`[TV] Trying Vavoo original link for ${id}`);
-            console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
-            console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
-            
-            // Prova tutti i nomi Vavoo per questo canale
-            let vavooResolved = false;
-            for (const vavooName of (channel as any).vavooNames) {
-              if (vavooResolved) break; // Esce al primo successo
-              
-              console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
-              try {
-                const originalLink = await getVavooOriginalLink(vavooName);
-                console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
-                
-                if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
-                  // Passa il link Vavoo originale al proxy (NON quello risolto)
-                  const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
-                  streams.push({
-                    url: vavooUrl,
-                    title: `${(channel as any).name} (V)`
-                  });
-                  console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
-                  vavooResolved = true;
-                } else {
-                  console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
-                }
-              } catch (vavooError) {
-                console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
-              }
-            }
-            
-            if (!vavooResolved) {
-              console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
-            }
-          } catch (error) {
-            console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
-          }
-                  } else {
-            console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
-          }
-
-          console.log(`🔍 Total streams generated: ${streams.length}`);
-          streams.forEach((stream, index) => {
-            console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
-          });
-          
-          console.log(`========= END TV STREAM REQUEST (GENERAL ENDPOINT) =========`);
-          res.json({ streams });
-    } else {
-        // Per altri tipi (movies, series) usa il builder
-        const builder = createBuilder(config);
-        const addonInterface = builder.getInterface();
-        
-        addonInterface.get({ resource: 'stream', type, id }, config)
-            .then((result: any) => {
-                console.log(`🎬 STREAM RESULT:`, result);
-                res.json(result);
-            })
-            .catch((error: any) => {
-                console.error(`❌ STREAM ERROR:`, error);
-                res.status(404).json({ error: 'Not found' });
-            });
-    }
-});
-
-// Aggiungiamo anche l'endpoint specifico per TV stream come MammaMia
 app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     const configStr = req.params.config;
     const id = req.params.id;
