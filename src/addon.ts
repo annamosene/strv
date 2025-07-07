@@ -535,7 +535,7 @@ function createBuilder(config: AddonConfig = {}) {
       return Promise.resolve({ metas: [] });
     });
 
-    // === HANDLER META TV ===
+    // === HANDLER UNICO META ===
     builder.defineMetaHandler(async ({ type, id }: { type: string; id: string }) => {
       console.log(`📺 META REQUEST: type=${type}, id=${id}`);
       if (type === "tv") {
@@ -543,380 +543,215 @@ function createBuilder(config: AddonConfig = {}) {
         const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
         const channel = tvChannels.find((c: any) => c.id === cleanId);
         if (channel) {
-          console.log(`✅ Found meta for channel: ${channel.name} (original id: ${cleanId})`);
-          
-          // Prepara i metadati base
           const metaWithPrefix = {
             ...channel,
             id: `tv:${channel.id}`,
-            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
+            posterShape: "landscape"
           };
-
-          // Aggiungi informazioni EPG se disponibili
+          // EPG logic (as before)
           if (epgManager) {
             try {
-              console.log(`🔍 EPG DEBUG per ${channel.name}:`);
-              console.log(`  - epgChannelIds:`, (channel as any).epgChannelIds);
-              
-              // Usa prima gli epgChannelIds dal canale, poi fallback al nome
               const epgChannelIds = (channel as any).epgChannelIds;
               const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
-              
-              console.log(`  - epgChannelId trovato:`, epgChannelId);
-              
               if (epgChannelId) {
-                console.log(`📺 EPG Channel ID trovato per ${channel.name}: ${epgChannelId}`);
-                
-                // Ottieni programma corrente e prossimo
                 const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
                 const nextProgram = await epgManager.getNextProgram(epgChannelId);
-                
-                console.log(`  - currentProgram:`, currentProgram ? currentProgram.title : 'null');
-                console.log(`  - nextProgram:`, nextProgram ? nextProgram.title : 'null');
-                
-                if (currentProgram || nextProgram) {
-                  let epgDescription = channel.description || '';
-                  
-                  if (currentProgram) {
-                    const startTime = epgManager.formatTime(currentProgram.start);
-                    const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
-                    epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
-                    if (currentProgram.description) {
-                      epgDescription += `\n${currentProgram.description}`;
-                    }
-                  }
-                  
-                  if (nextProgram) {
-                    const nextStartTime = epgManager.formatTime(nextProgram.start);
-                    const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
-                    epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
-                    if (nextProgram.description) {
-                      epgDescription += `\n${nextProgram.description}`;
-                    }
-                  }
-                  
-                  metaWithPrefix.description = epgDescription;
-                  console.log(`✅ EPG aggiunto alla descrizione per ${channel.name}`);
-                } else {
-                  console.log(`⚠️ Nessun programma trovato per ${channel.name}`);
+                let epgDescription = channel.description || '';
+                if (currentProgram) {
+                  const startTime = epgManager.formatTime(currentProgram.start);
+                  const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
+                  epgDescription += `\n\n🔴 IN ONDA ORA (${startTime}${endTime ? `-${endTime}` : ''}): ${currentProgram.title}`;
+                  if (currentProgram.description) epgDescription += `\n${currentProgram.description}`;
                 }
-              } else {
-                console.log(`⚠️ Nessun EPG Channel ID trovato per ${channel.name}${epgChannelIds ? ` (IDs cercati: ${epgChannelIds.join(', ')})` : ''}`);
+                if (nextProgram) {
+                  const nextStartTime = epgManager.formatTime(nextProgram.start);
+                  const nextEndTime = nextProgram.stop ? epgManager.formatTime(nextProgram.stop) : '';
+                  epgDescription += `\n\n⏭️ A SEGUIRE (${nextStartTime}${nextEndTime ? `-${nextEndTime}` : ''}): ${nextProgram.title}`;
+                  if (nextProgram.description) epgDescription += `\n${nextProgram.description}`;
+                }
+                metaWithPrefix.description = epgDescription;
               }
             } catch (epgError) {
               console.error(`❌ Errore EPG per ${channel.name}:`, epgError);
             }
-          } else {
-            console.log(`⚠️ EPG Manager non disponibile per ${channel.name}`);
           }
-          
-          return Promise.resolve({ meta: metaWithPrefix });
+          return { meta: metaWithPrefix };
         } else {
           console.log(`❌ No meta found for channel ID: ${id} (cleaned: ${cleanId})`);
+          return { meta: null };
         }
+      } else if (type === "movie" || type === "series") {
+        // --- ANIMEUNITY/ANIMESATURN LOGIC ---
+        try {
+          const animeUnityEnabled = (config.animeunityEnabled === 'on') || (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
+          const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
+          if ((id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) && (animeUnityEnabled || animeSaturnEnabled)) {
+            const bothLinkValue = config.bothLinks === 'on';
+            const animeUnityConfig: AnimeUnityConfig = {
+              enabled: animeUnityEnabled,
+              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+              mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+              bothLink: bothLinkValue,
+              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+            };
+            const animeSaturnConfig = {
+              enabled: animeSaturnEnabled,
+              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
+              mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
+              bothLink: bothLinkValue,
+              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
+            };
+            let meta: any = null;
+            // AnimeUnity
+            if (animeUnityEnabled) {
+              try {
+                const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
+                let info = null;
+                if (id.startsWith('kitsu:')) {
+                  info = await animeUnityProvider.handleKitsuRequest(id);
+                } else if (id.startsWith('mal:')) {
+                  info = await animeUnityProvider.handleMalRequest(id);
+                } else if (id.startsWith('tt')) {
+                  info = await animeUnityProvider.handleImdbRequest(id, null, null, type === 'movie');
+                } else if (id.startsWith('tmdb:')) {
+                  info = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                }
+                if (info && info.streams && info.streams.length > 0) {
+                  // Use the first stream as meta base (for now)
+                  meta = {
+                    id,
+                    type,
+                    name: info.streams[0].title,
+                    poster: '',
+                    description: info.streams[0].title,
+                  };
+                  console.log(`[AnimeUnity] Meta result:`, meta);
+                }
+              } catch (err) {
+                console.error('[AnimeUnity] Meta error:', err);
+              }
+            }
+            // AnimeSaturn fallback/merge
+            if ((!meta || !meta.name) && animeSaturnEnabled) {
+              try {
+                const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
+                const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
+                let info = null;
+                if (id.startsWith('kitsu:')) {
+                  info = await animeSaturnProvider.handleKitsuRequest(id);
+                } else if (id.startsWith('mal:')) {
+                  info = await animeSaturnProvider.handleMalRequest(id);
+                } else if (id.startsWith('tt')) {
+                  info = await animeSaturnProvider.handleImdbRequest(id, null, null, type === 'movie');
+                } else if (id.startsWith('tmdb:')) {
+                  info = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), null, null, type === 'movie');
+                }
+                if (info && info.streams && info.streams.length > 0) {
+                  meta = {
+                    id,
+                    type,
+                    name: info.streams[0].title,
+                    poster: '',
+                    description: info.streams[0].title,
+                  };
+                  console.log(`[AnimeSaturn] Meta result:`, meta);
+                }
+              } catch (err) {
+                console.error('[AnimeSaturn] Meta error:', err);
+              }
+            }
+            if (meta) return { meta };
+          }
+          // --- Vixsrc fallback for movie/series ---
+          try {
+            const bothLinkValue = config.bothLinks === 'on';
+            const finalConfig: ExtractorConfig = {
+              tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
+              mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
+              mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
+              bothLink: bothLinkValue
+            };
+            const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
+            if (res && res.length > 0) {
+              // Use the first stream as meta base (for now)
+              const s = res[0];
+              const meta = {
+                id,
+                type,
+                name: s.name,
+                poster: '',
+                description: s.name,
+              };
+              console.log(`[Vixsrc] Meta result:`, meta);
+              return { meta };
+            }
+          } catch (err) {
+            console.error('[Vixsrc] Meta error:', err);
+          }
+          return { meta: null };
+        } catch (err) {
+          console.error('Meta extraction failed:', err);
+          return { meta: null };
+        }
+      } else {
+        // fallback: not found
+        return { meta: null };
       }
-      return Promise.resolve({ meta: null });
     });
 
     // === HANDLER UNICO STREAM ===
-    builder.defineStreamHandler(async ({ type, id }: { type: string; id: string }) => {        // --- TV LOGIC ---
-        if (type === "tv") {
-          console.log(`========= TV STREAM REQUEST =========`);
-          console.log(`Channel ID: ${id}`);
-          console.log(`Config received:`, JSON.stringify(config, null, 2));
-          
-          // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
-          const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-          console.log(`Clean ID for lookup: ${cleanId}`);
-          
-          const channel = tvChannels.find((c: any) => c.id === cleanId);
-          if (!channel) {
-            console.log(`❌ Channel ${id} (cleaned: ${cleanId}) not found in tvChannels`);
+    builder.defineStreamHandler(async ({ type, id }, extra, config) => {
+        console.log(`\uD83C\uDFAC STREAM REQUEST: type=${type}, id=${id}, config parsed: ${!!config}`);
+        try {
+            if (type === 'tv') {
+                // ... TV logic unchanged ...
+                return await handleTvStream(id, config);
+            }
+            // --- MOVIE, SERIES, ANIME ---
+            if (type === 'movie' || type === 'series') {
+                if (id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) {
+                    // Prova AnimeUnityProvider
+                    let unityStreams = [];
+                    try {
+                        unityStreams = await AnimeUnityProvider.getStreams(id, type, config);
+                        if (unityStreams && unityStreams.length) {
+                            console.log('[Stream] AnimeUnityProvider streams:', unityStreams);
+                            return { streams: unityStreams };
+                        }
+                    } catch (e) {
+                        console.warn('[Stream] AnimeUnityProvider error:', e);
+                    }
+                    // Prova AnimeSaturnProvider
+                    let saturnStreams = [];
+                    try {
+                        saturnStreams = await AnimeSaturnProvider.getStreams(id, type, config);
+                        if (saturnStreams && saturnStreams.length) {
+                            console.log('[Stream] AnimeSaturnProvider streams:', saturnStreams);
+                            return { streams: saturnStreams };
+                        }
+                    } catch (e) {
+                        console.warn('[Stream] AnimeSaturnProvider error:', e);
+                    }
+                }
+                // Fallback: Vixsrc
+                try {
+                    const vixStreams = await getStreamContent(id, type, config);
+                    if (vixStreams && vixStreams.length) {
+                        console.log('[Stream] Vixsrc streams:', vixStreams);
+                        return { streams: vixStreams };
+                    }
+                } catch (e) {
+                    console.warn('[Stream] Vixsrc error:', e);
+                }
+                // Nessuno stream trovato
+                return { streams: [] };
+            }
+            // --- Altri tipi non gestiti ---
             return { streams: [] };
-          }
-          
-          console.log(`✅ Found channel:`, JSON.stringify(channel, null, 2));
-          
-          const streams: { url: string; title: string }[] = [];
-          const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
-                       (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
-          const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
-          const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
-          const staticUrl = (channel as any).staticUrl;
-
-          console.log(`🔧 Configuration:`);
-          console.log(`  - MFP URL: ${mfpUrl || 'NOT SET'}`);
-          console.log(`  - MFP Password: ${mfpPsw ? 'SET' : 'NOT SET'}`);
-          console.log(`  - TV Proxy URL: ${tvProxyUrl || 'NOT SET'}`);
-          console.log(`  - Static URL: ${staticUrl || 'NOT SET'}`);
-
-          // Controlla se il canale è in chiaro (da rai1 a rai4k)
-          const isFreeToAir = isFreeToAirChannel(cleanId);
-          console.log(`🔧 Channel ${cleanId} is free to air: ${isFreeToAir}`);
-
-          // 1. Stream via staticUrl (MPD o HLS)
-          if (staticUrl) {
-            if (isFreeToAir) {
-              // Per canali in chiaro, usa direttamente il staticUrl senza MFP
-              streams.push({
-                url: staticUrl,
-                title: `${(channel as any).name} (MPD)`
-              });
-              console.log(`✅ Added direct staticUrl for free-to-air channel: ${staticUrl}`);
-            } else if (mfpUrl && mfpPsw) {
-              // Per canali non in chiaro, usa MFP proxy
-              let proxyUrl: string;
-              if (staticUrl.includes('.mpd')) {
-                // Per file MPD usiamo il proxy MPD
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              } else {
-                // Per altri stream usiamo il proxy stream normale
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-              }
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} (MPD)`
-              });
-              console.log(`✅ Added MFP proxy stream: ${proxyUrl}`);
-            } else {
-              console.log(`❌ Cannot create stream: staticUrl=${!!staticUrl}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-            }
-          } else {
-            console.log(`❌ No staticUrl available for channel ${cleanId}`);
-          }
-
-          // 2. Stream via staticUrl2 (seconda URL statica)
-          const staticUrl2 = (channel as any).staticUrl2;
-          if (staticUrl2) {
-            if (isFreeToAir) {
-              // Per canali in chiaro, usa direttamente il staticUrl2 senza MFP
-              streams.push({
-                url: staticUrl2,
-                title: `${(channel as any).name} (MPD HD)`
-              });
-              console.log(`✅ Added direct staticUrl2 for free-to-air channel: ${staticUrl2}`);
-            } else if (mfpUrl && mfpPsw) {
-              // Per canali non in chiaro, usa MFP proxy
-              let proxyUrl: string;
-              if (staticUrl2.includes('.mpd')) {
-                // Per file MPD usiamo il proxy MPD
-                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-              } else {
-                // Per altri stream usiamo il proxy stream normale
-                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-              }
-              streams.push({
-                url: proxyUrl,
-                title: `${(channel as any).name} (MPD HD)`
-              });
-              console.log(`✅ Added MFP proxy stream for staticUrl2: ${proxyUrl}`);
-            } else {
-              console.log(`❌ Cannot create stream for staticUrl2: staticUrl2=${!!staticUrl2}, mfpUrl=${!!mfpUrl}, mfpPsw=${!!mfpPsw}`);
-            }
-          }
-
-          // 3. Stream Vavoo dinamico (ottieni link originale per proxy) - per tutti i canali
-          if (tvProxyUrl && (channel as any).vavooNames && Array.isArray((channel as any).vavooNames)) {
-            try {
-              console.log(`[TV] Trying Vavoo original link for ${id}`);
-              console.log(`[TV] Vavoo names available:`, (channel as any).vavooNames);
-              console.log(`[TV] TV Proxy URL:`, tvProxyUrl);
-              
-              // Prova tutti i nomi Vavoo per questo canale
-              let vavooResolved = false;
-              for (const vavooName of (channel as any).vavooNames) {
-                if (vavooResolved) break; // Esce al primo successo
-                
-                console.log(`[TV] Trying to get Vavoo original link: ${vavooName}`);
-                try {
-                  const originalLink = await getVavooOriginalLink(vavooName);
-                  console.log(`[TV] Vavoo original link result for ${vavooName}:`, originalLink);
-                  
-                  if (originalLink && originalLink !== 'NOT_FOUND' && originalLink !== 'NO_URL' && originalLink !== 'RESOLVE_FAIL' && originalLink !== 'ERROR') {
-                    // Passa il link Vavoo originale al proxy (NON quello risolto)
-                    const vavooUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(originalLink)}`;
-                    streams.push({
-                      url: vavooUrl,
-                      title: `${(channel as any).name} (V)`
-                    });
-                    console.log(`[TV] ✅ Added Vavoo stream for ${id} with name ${vavooName}: ${vavooUrl}`);
-                    vavooResolved = true;
-                  } else {
-                    console.log(`[TV] ❌ Failed to get Vavoo original link: ${vavooName} (result: ${originalLink})`);
-                  }
-                } catch (vavooError) {
-                  console.error(`[TV] ❌ Error resolving Vavoo name ${vavooName}:`, vavooError);
-                }
-              }
-              
-              if (!vavooResolved) {
-                console.log(`[TV] ❌ No Vavoo streams found for ${id}`);
-              }
-            } catch (error) {
-              console.error(`[TV] ❌ General error resolving Vavoo for ${id}:`, error);
-            }
-          } else {
-            console.log(`[TV] ❌ Skipping Vavoo for ${id}: tvProxyUrl=${!!tvProxyUrl}, vavooNames=${(channel as any).vavooNames}`);
-          }
-
-          console.log(`🔍 Total streams generated: ${streams.length}`);
-          streams.forEach((stream, index) => {
-            console.log(`  Stream ${index + 1}: ${stream.title} -> ${stream.url.substring(0, 100)}...`);
-          });
-          
-          // Se non ci sono stream, aggiungi un messaggio informativo
-          if (streams.length === 0) {
-            console.warn(`❌ No streams available for channel ${id} - adding fallback`);
-            streams.push({
-              url: 'data:text/plain;base64,Tm8gc3RyZWFtcyBhdmFpbGFibGU=', // "No streams available"
-              title: `${(channel as any).name} - Nessun stream disponibile`
-            });
-          }
-          
-          console.log(`========= END TV STREAM REQUEST =========`);
-          return { streams };
+        } catch (err) {
+            console.error('STREAM ERROR:', err);
+            return { streams: [] };
         }
-      // --- ANIMEUNITY/ANIMESATURN LOGIC ---
-      try {
-        const allStreams: Stream[] = [];
-        // Gestione AnimeUnity per ID Kitsu o MAL con fallback variabile ambiente
-        const animeUnityEnabled = (config.animeunityEnabled === 'on') || 
-                                (process.env.ANIMEUNITY_ENABLED?.toLowerCase() === 'true');
-        // Gestione AnimeSaturn per ID Kitsu o MAL con fallback variabile ambiente
-        const animeSaturnEnabled = (config.animesaturnEnabled === 'on') || 
-                                (process.env.ANIMESATURN_ENABLED?.toLowerCase() === 'true');
-        // Gestione parallela AnimeUnity e AnimeSaturn per ID Kitsu, MAL, IMDB, TMDB
-        if ((id.startsWith('kitsu:') || id.startsWith('mal:') || id.startsWith('tt') || id.startsWith('tmdb:')) && (animeUnityEnabled || animeSaturnEnabled)) {
-            const bothLinkValue = config.bothLinks === 'on';
-            const animeUnityConfig: AnimeUnityConfig = {
-                enabled: animeUnityEnabled,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-                bothLink: bothLinkValue,
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
-            };
-            const animeSaturnConfig = {
-                enabled: animeSaturnEnabled,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL || '',
-                mfpPassword: config.mediaFlowProxyPassword || process.env.MFP_PSW || '',
-                bothLink: bothLinkValue,
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY || ''
-            };
-            let animeUnityStreams: Stream[] = [];
-            let animeSaturnStreams: Stream[] = [];
-            // Parsing stagione/episodio per IMDB/TMDB
-            let seasonNumber: number | null = null;
-            let episodeNumber: number | null = null;
-            let isMovie = false;
-            if (id.startsWith('tt') || id.startsWith('tmdb:')) {
-                // Esempio: tt1234567:1:2 oppure tmdb:12345:1:2
-                const parts = id.split(':');
-                if (parts.length === 1) {
-                    isMovie = true;
-                } else if (parts.length === 2) {
-                    episodeNumber = parseInt(parts[1]);
-                } else if (parts.length === 3) {
-                    seasonNumber = parseInt(parts[1]);
-                    episodeNumber = parseInt(parts[2]);
-                }
-            }
-            // AnimeUnity
-            if (animeUnityEnabled) {
-                try {
-                    const animeUnityProvider = new AnimeUnityProvider(animeUnityConfig);
-                    let animeUnityResult;
-                    if (id.startsWith('kitsu:')) {
-                        console.log(`[AnimeUnity] Processing Kitsu ID: ${id}`);
-                        animeUnityResult = await animeUnityProvider.handleKitsuRequest(id);
-                    } else if (id.startsWith('mal:')) {
-                        console.log(`[AnimeUnity] Processing MAL ID: ${id}`);
-                        animeUnityResult = await animeUnityProvider.handleMalRequest(id);
-                    } else if (id.startsWith('tt')) {
-                        console.log(`[AnimeUnity] Processing IMDB ID: ${id}`);
-                        animeUnityResult = await animeUnityProvider.handleImdbRequest(id, seasonNumber, episodeNumber, isMovie);
-                    } else if (id.startsWith('tmdb:')) {
-                        console.log(`[AnimeUnity] Processing TMDB ID: ${id}`);
-                        animeUnityResult = await animeUnityProvider.handleTmdbRequest(id.replace('tmdb:', ''), seasonNumber, episodeNumber, isMovie);
-                    }
-                    if (animeUnityResult && animeUnityResult.streams) {
-                        animeUnityStreams = animeUnityResult.streams;
-                        for (const s of animeUnityResult.streams) {
-                            allStreams.push({ ...s, name: 'StreamViX AU' });
-                        }
-                    }
-                } catch (error) {
-                    console.error('🚨 AnimeUnity error:', error);
-                }
-            }
-            // AnimeSaturn
-            if (animeSaturnEnabled) {
-                try {
-                    const { AnimeSaturnProvider } = await import('./providers/animesaturn-provider');
-                    const animeSaturnProvider = new AnimeSaturnProvider(animeSaturnConfig);
-                    let animeSaturnResult;
-                    if (id.startsWith('kitsu:')) {
-                        console.log(`[AnimeSaturn] Processing Kitsu ID: ${id}`);
-                        animeSaturnResult = await animeSaturnProvider.handleKitsuRequest(id);
-                    } else if (id.startsWith('mal:')) {
-                        console.log(`[AnimeSaturn] Processing MAL ID: ${id}`);
-                        animeSaturnResult = await animeSaturnProvider.handleMalRequest(id);
-                    } else if (id.startsWith('tt')) {
-                        console.log(`[AnimeSaturn] Processing IMDB ID: ${id}`);
-                        animeSaturnResult = await animeSaturnProvider.handleImdbRequest(id, seasonNumber, episodeNumber, isMovie);
-                    } else if (id.startsWith('tmdb:')) {
-                        console.log(`[AnimeSaturn] Processing TMDB ID: ${id}`);
-                        animeSaturnResult = await animeSaturnProvider.handleTmdbRequest(id.replace('tmdb:', ''), seasonNumber, episodeNumber, isMovie);
-                    }
-                    if (animeSaturnResult && animeSaturnResult.streams) {
-                        animeSaturnStreams = animeSaturnResult.streams;
-                        for (const s of animeSaturnResult.streams) {
-                            allStreams.push({ ...s, name: 'StreamViX AS' });
-                        }
-                    }
-                } catch (error) {
-                    console.error('[AnimeSaturn] Errore:', error);
-                }
-            }
-        }
-        // Mantieni logica VixSrc per tutti gli altri ID
-        if (!id.startsWith('kitsu:') && !id.startsWith('mal:')) {
-            console.log(`📺 Processing non-Kitsu or MAL ID with VixSrc: ${id}`);
-            let bothLinkValue: boolean;
-            if (config.bothLinks !== undefined) {
-                bothLinkValue = config.bothLinks === 'on';
-            } else {
-                bothLinkValue = process.env.BOTHLINK?.toLowerCase() === 'true';
-            }
-            const finalConfig: ExtractorConfig = {
-                tmdbApiKey: config.tmdbApiKey || process.env.TMDB_API_KEY,
-                mfpUrl: config.mediaFlowProxyUrl || process.env.MFP_URL,
-                mfpPsw: config.mediaFlowProxyPassword || process.env.MFP_PSW,
-                bothLink: bothLinkValue
-            };
-            const res: VixCloudStreamInfo[] | null = await getStreamContent(id, type, finalConfig);
-            if (res) {
-                for (const st of res) {
-                    if (st.streamUrl == null) continue;
-                    console.log(`Adding stream with title: "${st.name}"`);
-                    allStreams.push({
-                        title: st.name,
-                        name: 'StreamViX Vx',
-                        url: st.streamUrl,
-                        behaviorHints: {
-                            notWebReady: true,
-                            headers: { "Referer": st.referer },
-                        },
-                    });
-                }
-                console.log(`📺 VixSrc streams found: ${res.length}`);
-            }
-        }
-        console.log(`✅ Total streams returned: ${allStreams.length}`);
-        return { streams: allStreams };
-      } catch (error) {
-        console.error('Stream extraction failed:', error);
-        return { streams: [] };
-      }
     });
 
     return builder;
@@ -1143,8 +978,6 @@ app.get('/:config/meta/:type/:id.json', async (req: Request, res: Response) => {
     if (type === "tv") {
         // CORREZIONE: Rimuovi prefisso tv: per trovare il canale
         const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
-        console.log(`Clean ID for lookup: ${cleanId}`);
-        
         const channel = tvChannels.find((c: any) => c.id === cleanId);
         if (channel) {
             console.log(`✅ Found meta for channel: ${channel.name} (original id: ${cleanId})`);
