@@ -372,7 +372,7 @@
     "epgChannelIds": [
       "Focus.it"
     ],
-    "category": "mediaset"
+    "category": ["mediaset", "documentari"]
   },
   {
     "id": "rtl1025tv",
@@ -769,16 +769,17 @@
     "type": "tv",
     "name": "Sky Cinema Uno",
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-cinema-uno-it.png",
-    "description": "Sky Cinema Uno - Sky",
+    "description": "Sky Cinema Uno",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemauno)/master_2hr-aac.mpd&key_id=111571675d8183ed169725564cded6d9&key=e077dedf383c8aed73d38567a8e6a046",
     "staticUrl2": "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skycinemauno)/master_2hr-all.mpd&key_id=11183626c204cba5932dcddd19fa1353&key=783bebbc1ae8464f736ba8f21ff3c7d1",
+    "staticUrlD": "https://thedaddy.click/stream/stream-860.php",
     "vavooNames": [
       "SKY CINEMA UNO"
     ],
     "epgChannelIds": [
       "skycinemauno.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemadue",
@@ -794,7 +795,7 @@
     "epgChannelIds": [
       "skycinemadue.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemacomedy",
@@ -810,7 +811,7 @@
     "epgChannelIds": [
       "skycinemacomedy.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemaaction",
@@ -826,7 +827,7 @@
     "epgChannelIds": [
       "skycinemaaction.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemafamily",
@@ -842,7 +843,7 @@
     "epgChannelIds": [
       "skycinemafamily.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemacollection",
@@ -858,7 +859,7 @@
     "epgChannelIds": [
       "skycinemacollection.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemadrama",
@@ -874,7 +875,7 @@
     "epgChannelIds": [
       "skycinemadrama.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemasuspense",
@@ -890,7 +891,7 @@
     "epgChannelIds": [
       "skycinemasuspense.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycinemaromance",
@@ -906,7 +907,7 @@
     "epgChannelIds": [
       "skycinemaromance.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skyuno",
@@ -916,6 +917,7 @@
     "description": "Sky Uno - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyuno)/master_2hr-aac.mpd&key_id=1115002b32ddb67077a31b31cc1b03c1&key=bc1a933a25b36aeed12a60f149157a3d",
     "staticUrl2": "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skyuno)/master_2hr-all.mpd&key_id=11184e48c0c79e31604e97d3aa41c995&key=33a94d0d57740fbc00fa977fc8233c9b",
+    "staticUrlD": "https://thedaddy.click/stream/stream-881.php",
     "vavooNames": [
       "SKY UNO"
     ],
@@ -932,13 +934,14 @@
     "description": "Sky Serie - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skyserie)/master_2hr-aac.mpd&key_id=1115bf01aeadce32fcec6a220375a3fa&key=9df360a2a22411897cd8b1bc48c0afc0",
     "staticUrl2": "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skyserie)/master_2hr-all.mpd&key_id=11186be8a991493db9d81656a53b6820&key=243aeeac44bf61ca7e8081dbb9de4a7c",
+    "staticUrlD": "https://thedaddy.click/stream/stream-880.php",
     "vavooNames": [
       "SKY SERIE"
     ],
     "epgChannelIds": [
       "skyserie.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skyatlantic",
@@ -954,7 +957,7 @@
     "epgChannelIds": [
       "skyatlantic.it"
     ],
-    "category": "sky"
+    "category": ["sky", "cinema"]
   },
   {
     "id": "skycrime",
@@ -986,7 +989,7 @@
     "epgChannelIds": [
       "skyinvestigation.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "skydocumentaries",
@@ -1002,7 +1005,7 @@
     "epgChannelIds": [
       "skydocumentaries.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "skynature",
@@ -1018,7 +1021,7 @@
     "epgChannelIds": [
       "skynature.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "history",
@@ -1034,7 +1037,7 @@
     "epgChannelIds": [
       "history.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "skyarte",
@@ -1050,7 +1053,7 @@
     "epgChannelIds": [
       "skyarte.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "mtv",
@@ -1108,13 +1111,14 @@
     "description": "Sky Sport Uno - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportuno)/master_2hr-aac.mpd&key_id=1115ca7bae09bbf4364eba27291b88a1&key=a38624a3b373a79e810f3b20cc295096",
     "staticUrl2": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportuno)/master_2hr-aac.mpd&key_id=1118b95f9878e87a0176a2a663bf8fb6&key=518c6f17f6e37f2d3a0e407a180bf01a",
+    "staticUrlD": "https://thedaddy.click/stream/stream-461.php",
     "vavooNames": [
       "SKY SPORT UNO"
     ],
     "epgChannelIds": [
       "skysportuno.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportf1",
@@ -1130,7 +1134,7 @@
     "epgChannelIds": [
       "skysportf1.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportcalcio",
@@ -1146,7 +1150,7 @@
     "epgChannelIds": [
       "skysportcalcio.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysporttennis",
@@ -1156,13 +1160,14 @@
     "description": "Sky Sport Tennis - Sky",
     "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysporttennis)/master_2hr-aac.mpd&key_id=111587fedaf11c03f2140b3e53ff5a5b&key=4192c4108bb887cbd33dc69afabc8096",
     "staticUrl2": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysporttennis)/master_2hr-aac.mpd&key_id=111862d27c1073698d6ec5bbc328fc4c&key=777ec90fc3cdc6cec1b963ef14760ef1",
+    "staticUrlD": "https://thedaddy.click/stream/stream-576.php",
     "vavooNames": [
       "SKY SPORT TENNIS"
     ],
     "epgChannelIds": [
       "skysporttennis.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportmotogp",
@@ -1178,7 +1183,7 @@
     "epgChannelIds": [
       "skysportmotogp.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportarena",
@@ -1194,7 +1199,7 @@
     "epgChannelIds": [
       "skysportarena.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportmax",
@@ -1210,7 +1215,7 @@
     "epgChannelIds": [
       "skysportmax.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportnba",
@@ -1226,7 +1231,7 @@
     "epgChannelIds": [
       "skysportnba.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportgoldf",
@@ -1241,37 +1246,39 @@
     "epgChannelIds": [
       "skysportnba.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "eurosport1",
     "type": "tv",
     "name": "Eurosport 1",
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/eurosport-1-it.png",
-    "description": "Eurosport 1 - Sky",
-    "staticUrl": "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(eurosport1)/master_2hr-aac.mpd&key_id=11158bc4ef31195cc0e9f93bcb99b8e0&key=1e3169483337e73d3d4646931197b062",
+    "description": "Eurosport 1",
+    "staticUrl": "https://timlivetu0.cb.ticdn.it/Content/DASH/Live/channel%28eurosport1%29/manifest.mpd&key_id=46e559c2f9f645ce8d80c7fa20446bdb&key=597d214d66342ee042bccffeb165e750",
+    "staticUrlD": "https://thedaddy.click/stream/stream-878.php",
     "vavooNames": [
       "EUROSPORT 1"
     ],
     "epgChannelIds": [
       "eurosport1.it"
     ],
-    "category": "sky"
+    "category": "sport"
   },
   {
     "id": "eurosport2",
     "type": "tv",
     "name": "Eurosport 2",
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/eurosport-2-it.png",
-    "description": "Eurosport 2 - Sky",
-    "staticUrl": "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(eurosport2)/master_2hr-aac.mpd&key_id=1115097a6b5a2cc55c2f6e9c65043ed7&key=2f82bc6a71fad0a0646936c2b0099c73",
+    "description": "Eurosport 2",
+    "staticUrl": "https://timlivetu0.cb.ticdn.it/Content/DASH/Live/channel%28eurosport2%29/manifest.mpd&key_id=e8372283a523444c84646c4172b1bc0f&key=969a90e1a1a6424a68fe4b5d776368ec",
+    "staticUrlD": "https://thedaddy.click/stream/stream-879.php",
     "vavooNames": [
       "EUROSPORT 2"
     ],
     "epgChannelIds": [
       "eurosport2.it"
     ],
-    "category": "sky"
+    "category": "sport"
   },
   {
     "id": "skysportlegend",
@@ -1286,7 +1293,7 @@
     "epgChannelIds": [
       "skysport251.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysportmix",
@@ -1301,7 +1308,7 @@
     "epgChannelIds": [
       "skysport251.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport251",
@@ -1317,7 +1324,7 @@
     "epgChannelIds": [
       "skysport251.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport252",
@@ -1333,7 +1340,7 @@
     "epgChannelIds": [
       "skysport252.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport253",
@@ -1349,7 +1356,7 @@
     "epgChannelIds": [
       "skysport253.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport254",
@@ -1365,7 +1372,7 @@
     "epgChannelIds": [
       "skysport254.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport255",
@@ -1381,7 +1388,7 @@
     "epgChannelIds": [
       "skysport255.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport256",
@@ -1397,7 +1404,7 @@
     "epgChannelIds": [
       "skysport256.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport257",
@@ -1413,7 +1420,7 @@
     "epgChannelIds": [
       "skysport257.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport258",
@@ -1429,7 +1436,7 @@
     "epgChannelIds": [
       "skysport258.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "skysport259",
@@ -1445,22 +1452,36 @@
     "epgChannelIds": [
       "skysport259.it"
     ],
-    "category": "sky"
+    "category": ["sky", "sport"]
   },
   {
     "id": "dazn1",
     "type": "tv",
     "name": "Dazn 1",
     "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/dazn-1-it.png",
-    "description": "Dazn 1 - Dazn",
-    "staticUrl": "https://abe6fjxaaaaaaaamc4pg55ekcyqz4.otte.live.cf.ww.aiv-cdn.net/dub-nitro/live/clients/dash/enc/lgk8kppclc/out/v1/f51173b6b0624a4386358ab8dfee257f/cenc.mpd&key_id=8272bf6ba46f23f9da5270057b6e028a&key=74ae70dd10b4bb38ed6ffe843f3e2ccd",
+    "description": "Dazn 1",
+    "staticUrlD": "https://thedaddy.click/stream/stream-877.php",
     "vavooNames": [
       "DAZN 1"
     ],
     "epgChannelIds": [
       "dazn1.it"
     ],
-    "category": "general"
+    "category": "sport"
+  },
+  {
+    "id": "dazn1",
+    "type": "tv",
+    "name": "Dazn 1",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/DAZN_logo.svg/1024px-DAZN_logo.svg.png",
+    "description": "Dazn",
+    "vavooNames": [
+      "DAZN"
+    ],
+    "epgChannelIds": [
+      "dazn.it"
+    ],
+    "category": "sport"
   },
   {
     "id": "deakids",
@@ -1505,7 +1526,7 @@
     "epgChannelIds": [
       "skyadventure.it"
     ],
-    "category": "sky"
+    "category": ["sky", "documentari"]
   },
   {
     "id": "nickelodeon",
