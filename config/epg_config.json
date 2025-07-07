@@ -1,6 +1,6 @@
 {
   "epgUrl": "https://github.com/nzo66/TV/raw/refs/heads/main/epg.xml",
-  "updateInterval": 86400000,
+  "updateInterval": 21600000,
   "cacheDir": "cache",
   "enabled": true,
   "supportedFormats": ["xml"],
