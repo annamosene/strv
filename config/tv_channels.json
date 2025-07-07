@@ -1268,7 +1268,7 @@
     "id": "eurosport2",
     "type": "tv",
     "name": "Eurosport 2",
-    "poster": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/eurosport-2-it.png",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Eurosport_2_Logo_2015.png",
     "description": "Eurosport 2",
     "staticUrl": "https://timlivetu0.cb.ticdn.it/Content/DASH/Live/channel%28eurosport2%29/manifest.mpd&key_id=e8372283a523444c84646c4172b1bc0f&key=969a90e1a1a6424a68fe4b5d776368ec",
     "staticUrlD": "https://thedaddy.click/stream/stream-879.php",
