@@ -41,6 +41,25 @@ const configCache: AddonConfig = {
   enableLiveTV: 'on'
 };
 
+// Funzione globale per log di debug
+const debugLog = (message: string, ...params: any[]) => {
+    console.log(`🔧 ${message}`, ...params);
+    
+    // Scrivi anche su file di log
+    try {
+        const logPath = path.join(__dirname, '../logs');
+        if (!fs.existsSync(logPath)) {
+            fs.mkdirSync(logPath, { recursive: true });
+        }
+        const logFile = path.join(logPath, 'config_debug.log');
+        const timestamp = new Date().toISOString();
+        const logMessage = `${timestamp} - ${message} ${params.length ? JSON.stringify(params) : ''}\n`;
+        fs.appendFileSync(logFile, logMessage);
+    } catch (e) {
+        console.error('Error writing to log file:', e);
+    }
+};
+
 // Base manifest configuration
 const baseManifest: Manifest = {
     id: "org.stremio.vixcloud",
@@ -163,25 +182,6 @@ function loadCustomConfig(): Manifest {
 function parseConfigFromArgs(args: any): AddonConfig {
     const config: AddonConfig = {};
     
-    // Funzione per log di debug
-    const debugLog = (message: string, ...params: any[]) => {
-        console.log(`🔧 ${message}`, ...params);
-        
-        // Scrivi anche su file di log
-        try {
-            const logPath = path.join(__dirname, '../logs');
-            if (!fs.existsSync(logPath)) {
-                fs.mkdirSync(logPath, { recursive: true });
-            }
-            const logFile = path.join(logPath, 'config_debug.log');
-            const timestamp = new Date().toISOString();
-            const logMessage = `${timestamp} - ${message} ${params.length ? JSON.stringify(params) : ''}\n`;
-            fs.appendFileSync(logFile, logMessage);
-        } catch (e) {
-            console.error('Error writing to log file:', e);
-        }
-    };
-    
     // Se non ci sono args o sono vuoti, ritorna configurazione vuota
     if (!args || args === '' || args === 'undefined' || args === 'null') {
         debugLog('No configuration provided, using defaults');
@@ -299,6 +299,11 @@ let tvChannels: any[] = [];
 let domains: any = {};
 let epgConfig: any = {};
 let epgManager: EPGManager | null = null;
+
+// ✅ DICHIARAZIONE delle variabili globali del builder
+let globalBuilder: any;
+let globalAddonInterface: any;
+let globalRouter: any;
 
 // Cache per i link Vavoo
 interface VavooCache {
@@ -498,6 +503,15 @@ try {
     tvChannels = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/tv_channels.json'), 'utf-8'));
     domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
     epgConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/epg_config.json'), 'utf-8'));
+    
+    console.log(`✅ Loaded ${tvChannels.length} TV channels`);
+    
+    // ✅ INIZIALIZZA IL ROUTER GLOBALE SUBITO DOPO IL CARICAMENTO
+    console.log('🔧 Initializing global router after loading TV channels...');
+    globalBuilder = createBuilder(configCache);
+    globalAddonInterface = globalBuilder.getInterface();
+    globalRouter = getRouter(globalAddonInterface);
+    console.log('✅ Global router initialized successfully');
     
     // Carica la cache Vavoo
     loadVavooCache();
@@ -711,10 +725,10 @@ function normalizeProxyUrl(url: string): string {
 }
 
 // Funzione per creare il builder con configurazione dinamica
-function createBuilder(config: AddonConfig = {}) {
+function createBuilder(initialConfig: AddonConfig = {}) {
     const manifest = loadCustomConfig();
     
-    if (config.mediaFlowProxyUrl || config.bothLinks || config.tmdbApiKey) {
+    if (initialConfig.mediaFlowProxyUrl || initialConfig.bothLinks || initialConfig.tmdbApiKey) {
         manifest.name;
     }
     
@@ -887,6 +901,10 @@ function createBuilder(config: AddonConfig = {}) {
             try {
                 console.log(`🔍 Stream request: ${type}/${id}`);
                 
+                // ✅ USA SEMPRE la configurazione dalla cache globale più aggiornata
+                const config = { ...configCache };
+                console.log(`🔧 Using global config cache for stream:`, config);
+                
                 const allStreams: Stream[] = [];
                 
                 // === LOGICA TV ===
@@ -977,12 +995,11 @@ function createBuilder(config: AddonConfig = {}) {
                         }
                     }
                     
-                    // 1. Stream via staticUrl (SEMPRE, per tutti i canali!)
+                    // 1. Stream via staticUrl (SOLO PROXY che funzionano davvero!)
                     if (staticUrl) {
                         hasStaticStream = true;
-                        // SEMPRE aggiungi sia proxy che direct per tutti i canali
+                        // SOLO versioni proxy - i diretti non funzionano bene in Stremio Web
                         if (mfpUrl && mfpPsw) {
-                            // Versione con proxy
                             let proxyUrl: string;
                             if (staticUrl.includes('.mpd')) {
                                 proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
@@ -995,20 +1012,13 @@ function createBuilder(config: AddonConfig = {}) {
                                 title: `🔴 ${(channel as any).name} (Proxy)`
                             });
                         }
-                        
-                        // SEMPRE aggiungi anche la versione diretta (per tutti i canali)
-                        streams.push({
-                            url: staticUrl,
-                            title: `🔴 ${(channel as any).name} (Direct)`
-                        });
                     }
 
-                    // 2. Stream via staticUrl2 (SEMPRE, per tutti i canali!)
+                    // 2. Stream via staticUrl2 (SOLO PROXY che funzionano davvero!)
                     if (staticUrl2) {
                         hasStaticStream = true;
-                        // SEMPRE aggiungi sia proxy che direct per tutti i canali
+                        // SOLO versioni proxy - i diretti non funzionano bene in Stremio Web
                         if (mfpUrl && mfpPsw) {
-                            // Versione con proxy
                             let proxyUrl: string;
                             if (staticUrl2.includes('.mpd')) {
                                 proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl2)}`;
@@ -1018,55 +1028,37 @@ function createBuilder(config: AddonConfig = {}) {
                             }
                             streams.push({
                                 url: proxyUrl,
-                                title: `🎬 ${(channel as any).name} (HD Proxy)`
+                                title: `🎬 ${(channel as any).name} (HD)`
                             });
                         }
-                        
-                        // SEMPRE aggiungi anche la versione diretta (per tutti i canali)
-                        streams.push({
-                            url: staticUrl2,
-                            title: `🎬 ${(channel as any).name} (HD Direct)`
-                        });
                     }
 
-                    // 3. Stream via staticUrlD (SEMPRE, per tutti i canali!)
+                    // 3. Stream via staticUrlD (SEMPRE, per tutti i canali con Daddy!)
                     if (staticUrlD) {
                         hasStaticStream = true;
                         const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080'; // Fallback proxy
                         
-                        // Versione con proxy
+                        // Versione con proxy (importante per Daddy)
                         const daddyProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
                         streams.push({
                             url: daddyProxyUrl,
-                            title: `📱 ${(channel as any).name} (D Proxy)`
-                        });
-                        
-                        // Versione diretta
-                        streams.push({
-                            url: staticUrlD,
-                            title: `📱 ${(channel as any).name} (D Direct)`
+                            title: `📱 ${(channel as any).name} (D)`
                         });
                     }
                     
-                    // 4. Stream via cache Vavoo (SEMPRE, per tutti i canali!)
+                    // 4. Stream via cache Vavoo (SOLO PROXY che funzionano!)
                     let vavooStreamAdded = false;
                     if (channelName) {
                         // Se abbiamo il link nella cache, usalo subito
                         if (vavooCache.links.has(channelName)) {
                             const vavooOriginalLink = vavooCache.links.get(channelName);
                             if (vavooOriginalLink) {
-                                // Usa tvProxyUrl se disponibile, altrimenti prova con un proxy di default
+                                // SOLO versione proxy - quella diretta non funziona bene in Stremio
                                 const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080'; // Fallback proxy
                                 const vavooProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
                                 streams.push({
                                     url: vavooProxyUrl,
-                                    title: `🌟 ${(channel as any).name} (Vavoo Proxy)`
-                                });
-                                
-                                // AGGIUNGI ANCHE la versione diretta di Vavoo per completezza
-                                streams.push({
-                                    url: vavooOriginalLink,
-                                    title: `🌟 ${(channel as any).name} (Vavoo Direct)`
+                                    title: `🌟 ${(channel as any).name} (Vavoo)`
                                 });
                                 
                                 vavooStreamAdded = true;
@@ -1101,11 +1093,7 @@ function createBuilder(config: AddonConfig = {}) {
                                     
                                     streams.push({
                                         url: vavooProxyUrl,
-                                        title: `🌟 ${(channel as any).name} (Vavoo Proxy)`
-                                    });
-                                    streams.push({
-                                        url: quickVavooLink,
-                                        title: `🌟 ${(channel as any).name} (Vavoo Direct)`
+                                        title: `🌟 ${(channel as any).name} (Vavoo)`
                                     });
                                     
                                     // Aggiorna la cache per il futuro
@@ -1405,6 +1393,7 @@ app.get('/', (_: Request, res: Response) => {
     res.send(landingHTML);
 });
 
+// ✅ Middleware semplificato che usa sempre il router globale
 app.use((req: Request, res: Response, next: NextFunction) => {
     debugLog(`Incoming request: ${req.method} ${req.path}`);
     debugLog(`Full URL: ${req.url}`);
@@ -1413,79 +1402,49 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const configString = req.path.split('/')[1];
     debugLog(`Config string extracted: "${configString}" (length: ${configString ? configString.length : 0})`);
     
-    // HARDCODED FIX per URL specifico con configurazione proxy MFP
+    // AGGIORNA SOLO LA CACHE GLOBALE senza ricreare il builder
     if (configString && configString.includes('eyJtZnBQcm94eVVybCI6Imh0dHA6Ly8xOTIuMTY4LjEuMTAwOjkwMDAi')) {
-        debugLog('📌 Found known MFP config pattern, applying hardcoded values');
-        const hardcodedConfig = {
+        debugLog('📌 Found known MFP config pattern, updating global cache');
+        Object.assign(configCache, {
             mfpProxyUrl: 'http://192.168.1.100:9000',
             mfpProxyPassword: 'test',
-            enableLiveTV: 'on'
-        };
-        
-        // Aggiorna la cache di configurazione
-        Object.assign(configCache, hardcodedConfig);
-        debugLog('📌 Updated config cache with hardcoded values:', configCache);
-        
-        const builder = createBuilder(hardcodedConfig);
-        const addonInterface = builder.getInterface();
-        const router = getRouter(addonInterface);
-        return router(req, res, next);
+            enableLiveTV: 'on',
+            tvProxyUrl: 'http://192.168.1.100:8080'
+        });
+        debugLog('📌 Updated global config cache:', configCache);
     }
     
-    // Se il config string non è vuoto e sembra essere una configurazione valida
+    // Per le richieste di stream TV, assicurati che la configurazione proxy sia sempre presente
+    if (req.url.includes('/stream/tv/') || req.url.includes('/stream/tv%3A')) {
+        debugLog('📺 TV Stream request detected, ensuring MFP configuration');
+        configCache.mfpProxyUrl = 'http://192.168.1.100:9000';
+        configCache.mfpProxyPassword = 'test';
+        configCache.enableLiveTV = 'on';
+        configCache.tvProxyUrl = 'http://192.168.1.100:8080';
+        debugLog('📺 Force-applied proxy config for TV streams:', configCache);
+    }
+    
+    // Altri parsing di configurazione
     if (configString && configString.length > 10 && !configString.startsWith('stream') && !configString.startsWith('meta') && !configString.startsWith('manifest')) {
         const parsedConfig = parseConfigFromArgs(configString);
-        
-        // Se abbiamo trovato una configurazione valida, la salviamo nella cache
         if (Object.keys(parsedConfig).length > 0) {
-            debugLog('📌 Found valid config in URL, saving to cache');
+            debugLog('� Found valid config in URL, updating global cache');
             Object.assign(configCache, parsedConfig);
-            debugLog('📌 Updated config cache:', configCache);
-            
-            const builder = createBuilder(parsedConfig);
-            const addonInterface = builder.getInterface();
-            const router = getRouter(addonInterface);
-            return router(req, res, next);
+            debugLog('� Updated global config cache:', configCache);
         }
     }
     
-    // Se il config string è vuoto o è manifest.json, o se è una richiesta di stream diretta, usa la configurazione dalla cache
-    if (!configString || configString === 'manifest.json' || configString === 'stream' || configString === 'meta' || 
-        req.url.includes('/stream/tv/') || req.url.includes('/stream/tv%3A')) {
-        debugLog('🔧 Using cached configuration for endpoint: ' + req.url);
-        debugLog('🔧 Current config cache:', configCache);
-        
-        // FORZA SEMPRE la configurazione MFP per le richieste di stream TV
-        if (req.url.includes('/stream/tv/') || req.url.includes('/stream/tv%3A')) {
-            debugLog('📺 TV Stream request detected, forcing MFP configuration');
-            configCache.mfpProxyUrl = 'http://192.168.1.100:9000';
-            configCache.mfpProxyPassword = 'test';
-            configCache.enableLiveTV = 'on';
-            configCache.tvProxyUrl = 'http://192.168.1.100:8080'; // Proxy per Vavoo
-        }
-        
-        const builder = createBuilder(configCache);
-        const addonInterface = builder.getInterface();
-        const router = getRouter(addonInterface);
-        return router(req, res, next);
+    // ✅ Inizializza il router globale se non è ancora stato fatto
+    if (!globalRouter) {
+        console.log('🔧 Initializing global router...');
+        globalBuilder = createBuilder(configCache);
+        globalAddonInterface = globalBuilder.getInterface();
+        globalRouter = getRouter(globalAddonInterface);
+        console.log('✅ Global router initialized');
     }
     
-    // Per tutti gli altri casi, prova con il parser normale
-    let config = parseConfigFromArgs(configString);
-    
-    // Se non è stata trovata una configurazione, usa quella dalla cache
-    if (Object.keys(config).length === 0) {
-        debugLog('🔧 No config found in URL, using cached configuration');
-        config = { ...configCache };
-    }
-    
-    debugLog(`🔧 Final parsed config:`, config);
-    
-    const builder = createBuilder(config);
-    const addonInterface = builder.getInterface();
-    const router = getRouter(addonInterface);
-    
-    router(req, res, next);
+    // USA SEMPRE il router globale
+    globalRouter(req, res, next);
 });
 
 const PORT = process.env.PORT || 7860;
@@ -1509,19 +1468,3 @@ function ensureCacheDirectories(): void {
 
 // Assicurati che le directory di cache esistano all'avvio
 ensureCacheDirectories();
-
-// Funzione di debug per scrivere log su file
-function debugLog(message: string, data?: any) {
-    const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] ${message}`;
-    const fullMessage = data ? `${logMessage}\n${JSON.stringify(data, null, 2)}\n` : `${logMessage}\n`;
-    
-    console.log(logMessage);
-    if (data) console.log(data);
-    
-    try {
-        fs.appendFileSync(path.join(__dirname, 'debug.log'), fullMessage);
-    } catch (error) {
-        console.error('Failed to write debug log:', error);
-    }
-}
