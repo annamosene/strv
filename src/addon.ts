@@ -605,7 +605,7 @@ function createBuilder(config: AddonConfig = {}) {
     const builder = new addonBuilder(manifest);
 
     // === HANDLER CATALOGO TV ===
-    builder.defineCatalogHandler(({ type, id, extra }: { type: string; id: string; extra?: any }) => {
+    builder.defineCatalogHandler(async ({ type, id, extra }: { type: string; id: string; extra?: any }) => {
       console.log(`📺 CATALOG REQUEST: type=${type}, id=${id}, extra=${JSON.stringify(extra)}`);
       if (type === "tv") {
         let filteredChannels = tvChannels;
@@ -643,17 +643,55 @@ function createBuilder(config: AddonConfig = {}) {
           console.log(`📺 No genre filter, showing all ${tvChannels.length} channels`);
         }
         
-        // Aggiungi prefisso tv: agli ID e posterShape landscape
-        const tvChannelsWithPrefix = filteredChannels.map((channel: any) => ({
-          ...channel,
-          id: `tv:${channel.id}`, // Aggiungi prefisso tv:
-          posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
+        // Aggiungi prefisso tv: agli ID, posterShape landscape e EPG
+        const tvChannelsWithPrefix = await Promise.all(filteredChannels.map(async (channel: any) => {
+          const channelWithPrefix = {
+            ...channel,
+            id: `tv:${channel.id}`, // Aggiungi prefisso tv:
+            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
+          };
+          
+          // === AGGIUNGI EPG ANCHE NEL CATALOGO ===
+          if (epgManager) {
+            try {
+              console.log(`🔍 Catalog: Checking EPG for channel: ${channel.name}`);
+              const epgChannelIds = (channel as any).epgChannelIds;
+              const epgChannelId = epgManager.findEPGChannelId(channel.name, epgChannelIds);
+              
+              if (epgChannelId) {
+                console.log(`✅ Catalog: Found EPG channel ID: ${epgChannelId}`);
+                const currentProgram = await epgManager.getCurrentProgram(epgChannelId);
+                
+                if (currentProgram) {
+                  const startTime = epgManager.formatTime(currentProgram.start);
+                  const endTime = currentProgram.stop ? epgManager.formatTime(currentProgram.stop) : '';
+                  
+                  // Aggiungi EPG compatto al poster/descrizione del catalogo
+                  const epgInfo = `🔴 ORA: ${currentProgram.title} (${startTime}${endTime ? `-${endTime}` : ''})`;
+                  
+                  // Aggiungi EPG alla descrizione del catalogo
+                  channelWithPrefix.description = `${channel.description || ''}\n\n${epgInfo}`;
+                  
+                  console.log(`✅ Catalog: Added EPG to ${channel.name}: ${currentProgram.title}`);
+                } else {
+                  console.log(`⚠️ Catalog: No current program found for ${epgChannelId}`);
+                }
+              } else {
+                console.log(`❌ Catalog: No EPG channel ID found for: ${channel.name}`);
+              }
+            } catch (epgError) {
+              console.error(`❌ Catalog: EPG error for ${channel.name}:`, epgError);
+            }
+          }
+          
+          return channelWithPrefix;
         }));
-        console.log(`✅ Returning ${tvChannelsWithPrefix.length} TV channels for catalog ${id} with prefixed IDs`);
-        return Promise.resolve({ metas: tvChannelsWithPrefix });
+        
+        console.log(`✅ Returning ${tvChannelsWithPrefix.length} TV channels for catalog ${id} with prefixed IDs and EPG`);
+        return { metas: tvChannelsWithPrefix };
       }
       console.log(`❌ No catalog found for type=${type}, id=${id}`);
-      return Promise.resolve({ metas: [] });
+      return { metas: [] };
     });
 
     // === HANDLER UNICO META ===
@@ -1110,7 +1148,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       if (isFreeToAir) {
         streams.push({
           url: staticUrl,
-          title: `🔴 ${(channel as any).name} (Direct)`
+          title: `🔴 ${(channel as any).name} (🌍Block)`
         });
         console.log(`⚡ Fast: Added direct staticUrl`);
       } else if (mfpUrl && mfpPsw) {
@@ -1145,7 +1183,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
         }
         streams.push({
           url: proxyUrl,
-          title: `🎬 ${(channel as any).name} (HD)`
+          title: `🎬 ${(channel as any).name} (MPDhd)`
         });
         console.log(`⚡ Fast: Added MFP proxy stream HD`);
       }
@@ -1156,20 +1194,94 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
       streams.push({
         url: daddyProxyUrl,
-        title: `📱 ${(channel as any).name} (Mobile)`
+        title: `📱 ${(channel as any).name} (D)`
       });
       console.log(`⚡ Fast: Added Daddy proxy stream`);
     }
 
-    // === RESTITUISCI IMMEDIATAMENTE I LINK VELOCI ===
+    // === PARTE 2: AGGIUNGI VAVOO ALLA RISPOSTA IMMEDIATA ===
+    // Prova a ottenere il link Vavoo con timeout molto breve (1 secondo)
+    const channelName = (channel as any).name;
+    const now = Date.now();
+    if (channelName && tvProxyUrl) {
+      try {
+        console.log(`🎬 Fast: Trying Vavoo for ${channelName} with 1s timeout...`);
+        
+        // Prova prima dalla cache
+        const cached = vavooCache[channelName];
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < VAVOO_CACHE_TTL) {
+          console.log(`🚀 Fast: Vavoo cache HIT for ${channelName}`);
+          if (cached.link) {
+            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(cached.link)}`;
+            streams.push({
+              url: vavooProxyUrl,
+              title: `📺 ${channelName} (V)`
+            });
+            console.log(`✅ Fast: Added cached Vavoo stream`);
+          }
+        } else {
+          // Prova fetch veloce (1 secondo timeout)
+          console.log(`⚡ Fast: Fetching Vavoo with 1s timeout for ${channelName}`);
+          const vavooPromise = new Promise<string | null>((resolve) => {
+            const timeout = setTimeout(() => {
+              console.log(`⏰ Fast: Vavoo 1s timeout for ${channelName}`);
+              resolve(null);
+            }, 1000);
+
+            const options = {
+              timeout: 1000,
+              env: {
+                ...process.env,
+                PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
+              }
+            };
+            
+            execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName, '--original-link'], options, (error: Error | null, stdout: string, stderr: string) => {
+              clearTimeout(timeout);
+              
+              if (error || !stdout || stdout.trim() === '') {
+                resolve(null);
+              } else {
+                const result = stdout.trim();
+                console.log(`✅ Fast: Vavoo found for ${channelName}: ${result}`);
+                resolve(result);
+              }
+            });
+          });
+          
+          const vavooOriginalLink = await vavooPromise;
+          if (vavooOriginalLink) {
+            // Salva in cache
+            vavooCache[channelName] = {
+              link: vavooOriginalLink,
+              timestamp: now
+            };
+            
+            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
+            streams.push({
+              url: vavooProxyUrl,
+              title: `📺 ${channelName} (V)`
+            });
+            console.log(`✅ Fast: Added fresh Vavoo stream`);
+          } else {
+            console.log(`❌ Fast: No Vavoo link found for ${channelName} in 1s`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Fast: Vavoo error for ${channelName}:`, error);
+      }
+    }
+
+    // === RESTITUISCI IMMEDIATAMENTE I LINK (incluso Vavoo se trovato) ===
     if (streams.length > 0) {
       console.log(`🚀 Returning ${streams.length} FAST streams immediately for ${channel.name}`);
       res.json({ streams });
       
-      // === PARTE 2: VAVOO IN BACKGROUND (Non blocca la risposta) ===
-      // Nota: Questa parte non influenza la risposta già inviata
-      const channelName = (channel as any).name;
-      if (channelName && tvProxyUrl) {
+      // === PARTE 3: VAVOO IN BACKGROUND per aggiornare cache ===
+      // Solo se non abbiamo già un link Vavoo fresco
+      if (channelName && tvProxyUrl && (!vavooCache[channelName] || (now - vavooCache[channelName].timestamp) > VAVOO_CACHE_TTL)) {
         // Esegui Vavoo in background senza bloccare
         setImmediate(async () => {
           try {
@@ -1192,7 +1304,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
 
     // === FALLBACK: Se non ci sono link statici, prova Vavoo (più lento) ===
     console.log(`⚠️ No static streams found, falling back to Vavoo (slower)...`);
-    const channelName = (channel as any).name;
+    // Usa la variabile channelName già definita sopra
     if (channelName && tvProxyUrl) {
       try {
         console.log(`🔍 Fallback: Trying to get Vavoo original link for: ${channelName}`);
@@ -1202,7 +1314,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
           const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
           streams.push({
             url: vavooProxyUrl,
-            title: `📺 ${channelName} (Vavoo)`
+            title: `📺 ${channelName} (V)`
           });
           console.log(`✅ Fallback: Added Vavoo proxy stream`);
         } else {
