@@ -980,8 +980,9 @@ function createBuilder(config: AddonConfig = {}) {
                     // 1. Stream via staticUrl (SEMPRE, per tutti i canali!)
                     if (staticUrl) {
                         hasStaticStream = true;
-                        if (mfpUrl && mfpPsw && !isFreeToAir) {
-                            // Canale a pagamento con proxy
+                        // SEMPRE aggiungi sia proxy che direct per tutti i canali
+                        if (mfpUrl && mfpPsw) {
+                            // Versione con proxy
                             let proxyUrl: string;
                             if (staticUrl.includes('.mpd')) {
                                 proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
@@ -993,20 +994,21 @@ function createBuilder(config: AddonConfig = {}) {
                                 url: proxyUrl,
                                 title: `🔴 ${(channel as any).name} (Proxy)`
                             });
-                        } else {
-                            // Canale free-to-air o senza proxy (direct)
-                            streams.push({
-                                url: staticUrl,
-                                title: `🔴 ${(channel as any).name} (Direct)`
-                            });
                         }
+                        
+                        // SEMPRE aggiungi anche la versione diretta (per tutti i canali)
+                        streams.push({
+                            url: staticUrl,
+                            title: `🔴 ${(channel as any).name} (Direct)`
+                        });
                     }
 
                     // 2. Stream via staticUrl2 (SEMPRE, per tutti i canali!)
                     if (staticUrl2) {
                         hasStaticStream = true;
-                        if (mfpUrl && mfpPsw && !isFreeToAir) {
-                            // Canale a pagamento con proxy
+                        // SEMPRE aggiungi sia proxy che direct per tutti i canali
+                        if (mfpUrl && mfpPsw) {
+                            // Versione con proxy
                             let proxyUrl: string;
                             if (staticUrl2.includes('.mpd')) {
                                 proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl2)}`;
@@ -1016,25 +1018,33 @@ function createBuilder(config: AddonConfig = {}) {
                             }
                             streams.push({
                                 url: proxyUrl,
-                                title: `🎬 ${(channel as any).name} (HD)`
-                            });
-                        } else {
-                            // Canale free-to-air o senza proxy (direct)
-                            streams.push({
-                                url: staticUrl2,
-                                title: `🎬 ${(channel as any).name} (HD)`
+                                title: `🎬 ${(channel as any).name} (HD Proxy)`
                             });
                         }
+                        
+                        // SEMPRE aggiungi anche la versione diretta (per tutti i canali)
+                        streams.push({
+                            url: staticUrl2,
+                            title: `🎬 ${(channel as any).name} (HD Direct)`
+                        });
                     }
 
                     // 3. Stream via staticUrlD (SEMPRE, per tutti i canali!)
                     if (staticUrlD) {
                         hasStaticStream = true;
                         const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080'; // Fallback proxy
+                        
+                        // Versione con proxy
                         const daddyProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
                         streams.push({
                             url: daddyProxyUrl,
-                            title: `📱 ${(channel as any).name} (D)`
+                            title: `📱 ${(channel as any).name} (D Proxy)`
+                        });
+                        
+                        // Versione diretta
+                        streams.push({
+                            url: staticUrlD,
+                            title: `📱 ${(channel as any).name} (D Direct)`
                         });
                     }
                     
@@ -1050,29 +1060,64 @@ function createBuilder(config: AddonConfig = {}) {
                                 const vavooProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
                                 streams.push({
                                     url: vavooProxyUrl,
-                                    title: `🌟 ${(channel as any).name} (Vavoo)`
+                                    title: `🌟 ${(channel as any).name} (Vavoo Proxy)`
                                 });
+                                
+                                // AGGIUNGI ANCHE la versione diretta di Vavoo per completezza
+                                streams.push({
+                                    url: vavooOriginalLink,
+                                    title: `🌟 ${(channel as any).name} (Vavoo Direct)`
+                                });
+                                
                                 vavooStreamAdded = true;
                                 console.log(`✅ Stream Vavoo aggiunto dalla cache per ${channelName}`);
                             }
                         }
                         
-                        // SEMPRE prova a risolvere Vavoo per tutti i canali (anche se abbiamo già uno stream)
+                        // Se NON abbiamo Vavoo nella cache, prova risoluzione rapida
                         if (!vavooStreamAdded) {
-                            debugLog(`🔍 Tentativo risoluzione Vavoo per ${channelName}`);
-                            // Risoluzione sincrona immediata (con timeout breve)
-                            resolveVavooChannelByName(channelName)
-                                .then(vavooOriginalLink => {
-                                    if (vavooOriginalLink) {
-                                        debugLog(`✅ Link Vavoo risolto per ${channelName}: ${vavooOriginalLink.substring(0, 50)}...`);
-                                        // Aggiorna la cache per il prossimo utilizzo
-                                        vavooCache.links.set(channelName, vavooOriginalLink);
-                                        saveVavooCache();
-                                    }
-                                })
-                                .catch(error => {
-                                    debugLog(`⚠️ Errore Vavoo per ${channelName}:`, error);
-                                });
+                            debugLog(`🔍 Tentativo risoluzione Vavoo RAPIDA per ${channelName}`);
+                            
+                            // Prova risoluzione sincrona con timeout molto breve (per non bloccare Stremio)
+                            const vavooPromise = new Promise<string | null>((resolve) => {
+                                const timeout = setTimeout(() => resolve(null), 2000); // Timeout 2 secondi
+                                
+                                resolveVavooChannelByName(channelName)
+                                    .then(vavooLink => {
+                                        clearTimeout(timeout);
+                                        resolve(vavooLink);
+                                    })
+                                    .catch(() => {
+                                        clearTimeout(timeout);
+                                        resolve(null);
+                                    });
+                            });
+                            
+                            try {
+                                const quickVavooLink = await vavooPromise;
+                                if (quickVavooLink) {
+                                    const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080';
+                                    const vavooProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(quickVavooLink)}`;
+                                    
+                                    streams.push({
+                                        url: vavooProxyUrl,
+                                        title: `🌟 ${(channel as any).name} (Vavoo Proxy)`
+                                    });
+                                    streams.push({
+                                        url: quickVavooLink,
+                                        title: `🌟 ${(channel as any).name} (Vavoo Direct)`
+                                    });
+                                    
+                                    // Aggiorna la cache per il futuro
+                                    vavooCache.links.set(channelName, quickVavooLink);
+                                    saveVavooCache();
+                                    
+                                    vavooStreamAdded = true;
+                                    debugLog(`✅ Stream Vavoo risolto in tempo reale per ${channelName}`);
+                                }
+                            } catch (error) {
+                                debugLog(`⚠️ Errore risoluzione Vavoo rapida per ${channelName}:`, error);
+                            }
                         }
                     }
 
@@ -1082,6 +1127,53 @@ function createBuilder(config: AddonConfig = {}) {
                         title: s.title,
                         url: s.url
                     }));
+
+                    // 5. AGGIUNGI STREAM ALTERNATIVI/FALLBACK per canali specifici
+                    if (isSkyChannel && finalStreams.length < 3) {
+                        debugLog(`🔧 Adding fallback streams for Sky channel: ${channelName}`);
+                        
+                        // Aggiungi stream alternativi per Sky se non ne abbiamo abbastanza
+                        const skyFallbackUrls = [
+                            'https://ottorigin.livepush.io/live/smil:skyuno.smil/playlist.m3u8',
+                            'https://linear08-it-dash.cdn13.skycdp.com/016a/31103/FHD/index.mpd'
+                        ];
+                        
+                        skyFallbackUrls.forEach((fallbackUrl, index) => {
+                            if (mfpUrl && mfpPsw) {
+                                const fallbackProxyUrl = fallbackUrl.includes('.mpd') ? 
+                                    `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(fallbackUrl)}` :
+                                    `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(fallbackUrl)}`;
+                                
+                                finalStreams.push({
+                                    name: 'StreamViX TV',
+                                    title: `🆘 ${channelName} (Fallback ${index + 1})`,
+                                    url: fallbackProxyUrl
+                                });
+                            }
+                        });
+                    }
+                    
+                    // 6. AGGIUNGI SEMPRE almeno uno stream generico se ancora non ne abbiamo
+                    if (finalStreams.length === 0) {
+                        debugLog(`⚠️ No streams available for ${channelName}, adding generic fallbacks`);
+                        
+                        // Stream RAI 1 come fallback universale
+                        finalStreams.push({
+                            name: 'StreamViX TV',
+                            title: `⚠️ ${channelName} (Fallback RAI)`,
+                            url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803'
+                        });
+                        
+                        // Se abbiamo un proxy, aggiungi anche versione proxy del fallback
+                        if (mfpUrl && mfpPsw) {
+                            const fallbackProxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent('https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803')}`;
+                            finalStreams.push({
+                                name: 'StreamViX TV',
+                                title: `⚠️ ${channelName} (Fallback RAI Proxy)`,
+                                url: fallbackProxyUrl
+                            });
+                        }
+                    }
 
                     debugLog(`Generated ${finalStreams.length} streams for ${channelName}`, finalStreams);
 
