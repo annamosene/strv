@@ -155,10 +155,20 @@ function parseConfigFromArgs(args: any): AddonConfig {
     
     if (typeof args === 'string') {
         try {
-            const decoded = decodeURIComponent(args);
+            // Prima prova a decodificare come base64
+            let decoded: string;
+            try {
+                decoded = Buffer.from(args, 'base64').toString('utf-8');
+            } catch {
+                // Se fallisce, prova con decodeURIComponent
+                decoded = decodeURIComponent(args);
+            }
+            
             const parsed = JSON.parse(decoded);
+            console.log('🔧 Configuration parsed:', parsed);
             return parsed;
         } catch (error) {
+            console.error('❌ Error parsing configuration:', error);
             return {};
         }
     }
@@ -777,11 +787,22 @@ function createBuilder(config: AddonConfig = {}) {
                     
                     console.log(`✅ Found channel: ${channel.name}`);
                     
+                    // Debug della configurazione proxy
+                    console.log(`🔧 Config DEBUG - mfpProxyUrl: ${config.mfpProxyUrl}`);
+                    console.log(`🔧 Config DEBUG - mediaFlowProxyUrl: ${config.mediaFlowProxyUrl}`);
+                    console.log(`🔧 Config DEBUG - mfpProxyPassword: ${config.mfpProxyPassword ? '***' : 'NOT SET'}`);
+                    console.log(`🔧 Config DEBUG - mediaFlowProxyPassword: ${config.mediaFlowProxyPassword ? '***' : 'NOT SET'}`);
+                    console.log(`🔧 Config DEBUG - tvProxyUrl: ${config.tvProxyUrl}`);
+                    
                     const streams: { url: string; title: string }[] = [];
                     const mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) : 
                                  (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
                     const mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
                     const tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+                    
+                    console.log(`🔧 Computed mfpUrl: ${mfpUrl}`);
+                    console.log(`🔧 Computed mfpPsw: ${mfpPsw ? '***' : 'NOT SET'}`);
+                    console.log(`🔧 Computed tvProxyUrl: ${tvProxyUrl}`);
                     const staticUrl = (channel as any).staticUrl;
                     const staticUrl2 = (channel as any).staticUrl2;
                     const staticUrlD = (channel as any).staticUrlD;
