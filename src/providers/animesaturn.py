@@ -13,15 +13,8 @@ import sys
 import json
 import urllib.parse
 import argparse
-import os
 
-def get_domain(service):
-    config_path = os.path.join(os.path.dirname(__file__), '../../config/domains.json')
-    with open(config_path, 'r') as f:
-        domains = json.load(f)
-    return domains.get(service)
-
-BASE_URL = "https://" + get_domain("animesaturn")
+BASE_URL = "https://www.animesaturn.cx"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 HEADERS = {"User-Agent": USER_AGENT}
 TIMEOUT = 20

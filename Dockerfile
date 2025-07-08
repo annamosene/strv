@@ -1,22 +1,21 @@
 # Scegli un'immagine Node.js di base
 FROM node:18-slim
 
-# Installa git, python3 e pip con le librerie necessarie
+# Installa git, python3 e pip
 USER root 
 RUN apt-get update && apt-get install -y git python3 python3-pip ca-certificates --no-install-recommends && rm -rf /var/lib/apt/lists/*
-
-# Installa le dipendenze Python direttamente
-RUN pip3 install --no-cache-dir --break-system-packages requests beautifulsoup4
-
 # Imposta la directory di lavoro nell'immagine
 WORKDIR /usr/src/app
 
 # Clona il repository Git
 # Sostituisci con l'URL del tuo repository e opzionalmente un branch o tag
-ARG GIT_REPO_URL="https://github.com/qwertyuiop8899/test.git"
+ARG GIT_REPO_URL="https://github.com/qwertyuiop8899/StreamViX.git"
 ARG GIT_BRANCH="main"
 RUN git -c http.sslVerify=false clone --branch ${GIT_BRANCH} --depth 1 ${GIT_REPO_URL} .
 # Il "." alla fine clona il contenuto della repo direttamente in /usr/src/app
+
+# Installa le dipendenze Python direttamente
+RUN pip3 install --no-cache-dir --break-system-packages requests beautifulsoup4
 
 # Installa una versione specifica di pnpm per evitare problemi di compatibilità della piattaforma
 RUN npm install -g pnpm@8.15.5
@@ -48,15 +47,6 @@ RUN pnpm run build
 # Esponi la porta su cui l'applicazione ascolterà (Hugging Face la mapperà)
 # Non è strettamente necessario EXPOSE qui perché HF assegna la porta tramite env var
 # EXPOSE 3000 
-
-# Copia i file di configurazione e lo script Python nella directory di lavoro
-#COPY config/tv_channels.json ./config/tv_channels.json
-#COPY config/domains.json ./config/domains.json  
-#COPY config/epg_config.json ./config/epg_config.json
-#COPY vavoo_resolver.py ./vavoo_resolver.py
-
-# Assicurati che vavoo_resolver.py sia eseguibile
-RUN chmod +x vavoo_resolver.py
 
 # Definisci il comando per avviare l'applicazione
 CMD [ "pnpm", "start" ]

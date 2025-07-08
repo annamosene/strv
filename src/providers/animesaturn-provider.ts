@@ -164,6 +164,8 @@ function normalizeTitleForSearch(title: string): string {
     'Slam Dunk: National Domination! Sakuragi Hanamichi': 'Slam Dunk: Zenkoku Seiha Da! Sakuragi Hanamichi',
     "Slam Dunk: Roar!! Basket Man Spiriy": "Slam Dunk: Hoero Basketman-damashii! Hanamichi to Rukawa no Atsuki Natsu",
     "Parasyte: The Maxim": "Kiseijuu",
+    "Attack on Titan OAD": "L'attacco dei Giganti: Il taccuino di Ilse Sub ITA",
+
 
 
     // Qui puoi aggiungere altre normalizzazioni custom
@@ -195,9 +197,7 @@ function normalizeUnicodeToAscii(str: string): string {
 
 export class AnimeSaturnProvider {
   private kitsuProvider = new KitsuProvider();
-  constructor(private config: AnimeSaturnConfig) {
-    console.log('[AnimeSaturnProvider] Config:', this.config);
-  }
+  constructor(private config: AnimeSaturnConfig) {}
 
   // Ricerca tutte le versioni (AnimeSaturn non distingue SUB/ITA/CR, ma puoi inferirlo dal titolo)
   private async searchAllVersions(title: string, malId?: string): Promise<{ version: AnimeSaturnResult; language_type: string }[]> {

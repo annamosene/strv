@@ -180,9 +180,7 @@ function normalizeTitleForSearch(title: string): string {
 export class AnimeUnityProvider {
   private kitsuProvider = new KitsuProvider();
 
-  constructor(private config: AnimeUnityConfig) {
-    console.log('[AnimeUnityProvider] Config:', this.config);
-  }
+  constructor(private config: AnimeUnityConfig) {}
 
   private async searchAllVersions(title: string): Promise<{ version: AnimeUnitySearchResult; language_type: string }[]> {
       const subPromise = invokePythonScraper(['search', '--query', title]).catch(() => []);

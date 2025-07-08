@@ -9,19 +9,18 @@ Un addon per Stremio che estrae sorgenti streaming dai siti vixsrc e animeunity 
 
 * **✅ Supporto Film:** Trova flussi streaming per i film utilizzando il loro ID TMDB.
 * **📺 Supporto Serie TV:** Trova flussi per ogni episodio di una serie TV, basandosi su ID TMDB in formato stagione/episodio.
-* **⛩️ Supporto Anime:** Trova flussi per ogni episodio di una determinato Anime, basandosi su ID KITSU in formato stagione/episodio.
+* **⛩️ Supporto Anime:** Trova flussi per ogni episodio di una determinato Anime, ora supporta ricerca sia da cinemeta, sia da tmdb che da kitsu.
 * **🔗 Integrazione Perfetta:** Si integra meravigliosamente con l'interfaccia di Stremio per un'esperienza utente fluida.
 
 ---
 
 ## ⚙️ Installazione
 
-Puoi installare StreamViX-AU solamente in locale, su un server casalingo o su una VPN non flaggata o con smartdns.
+Puoi installare StreamViX solamente in locale, su un server casalingo o su una VPN non flaggata o con smartdns per verdere animeunity, 
+per il resto, animesaturn e vixsrc va bene anche Huggingface.
 
-### 🔍 Per animeunity bisogna cercare solamente tramite il catalogo Kitsu https://anime-kitsu.strem.fun/manifest.json
-
-Oppure usare questa versione senza Anime, serve solo aggiungere la TMDB api key e MFP url e psw
-https://streamvix-streamvix.hf.space
+Oppure usare questa versione senza gia configurata, serve solo aggiungere la TMDB api key e MFP url e psw, animeunity non funzionerà!
+https://streamvix-streamvix-anime.hf.space
 ---
 
 ### 🚀 Metodo 1: Hugging Face (Consigliato per Tutti)
@@ -36,6 +35,38 @@ Questo metodo ti permette di avere la tua istanza personale dell'addon online, g
 
 #### Procedura di Installazione
 
+1.  **Crea un Nuovo Space 🆕**
+    * Vai su [Hugging Face](https://huggingface.co/) e accedi.
+    * Clicca sul tuo profilo e poi su `New Space`.
+    * **Space name:** Scegli un nome (es. `StreamViX-tuo-username`).
+    * **Select the Space SDK:** Scegli `Docker`.
+    * **Visibilità:** Assicurati che sia `Public`.
+    * Clicca su `Create Space`.
+
+2.  **Aggiungi i Secrets 🔐** (Opzionale se inseriti durate l'installazione)
+    * Nel tuo nuovo Space, vai sulla scheda `Settings`.
+    * Nella sezione `Variables and secrets`, clicca su `New secret`.
+    * Aggiungi i seguenti tre secrets, uno alla volta, facendo attenzione a scrivere correttamente i nomi:
+        * `Name: TMDB_API_KEY` -> `Value: la_tua_chiave_api_di_tmdb`
+        * `Name: MFP_URL` -> `Value: l_url_della_tua_istanza_mfp` (es. `https://username-mfp.hf.space`, **senza la `/` finale**)
+        * `Name: MFP_PSW` -> `Value: la_password_che_hai_impostato_per_mfp`
+        * `name: BOTHLINK ` -> `Value: "false"   true o false (mostra entrambi i link MFP e DIRECT)`    
+
+3.  **Configura il Dockerfile 📝**
+    * Torna alla scheda `Files` del tuo Space.
+    * Clicca su `Add file` e seleziona `Create a new file`.
+    * Chiamalo `Dockerfile` (senza estensioni, con la "D" maiuscola).
+    * Incolla all'interno il contenuto del [Dockerfile](https://github.com/qwertyuiop8899/StreamViX/blob/main/Dockerfile) che trovi nel repository ufficiale di StreamViX.
+    * Clicca su `Commit new file to main`.
+
+4.  **Build e Deploy 🚀**
+    * Hugging Face avvierà automaticamente la build del tuo addon. Puoi monitorare il processo nella scheda `Logs`.
+    * Una volta che vedi lo stato "Running", il tuo addon è pronto!
+
+5.  **Installa in Stremio 🎬**
+    * Nella pagina principale del tuo Space, vedrai un pulsante per installare l'addon (solitamente "Install"). Cliccaci sopra per installarlo automaticamente.
+
+
 ---
 
 ### 🐳 Docker Compose (Avanzato / Self-Hosting)
@@ -49,13 +80,13 @@ Salva il seguente contenuto in un file chiamato `docker-compose.yml`, oppure agg
 ```yaml
 services:
   streamvixau:
-    build: https://github.com/qwertyuiop8899/StreamVix-AU.git#main
+    build: https://github.com/qwertyuiop8899/StreamViX.git#main
     container_name: streamvixau
     restart: unless-stopped
     ports:
       - '7860:7860'
 ```
-Sostituisci il link con il tuo fork se preferisci https://github.com/qwertyuiop8899/StreamVix-AU.git#main
+Sostituisci il link con il tuo fork se preferisci https://github.com/qwertyuiop8899/StreamViX.git#main
 
 TMDB Api KEY, MFP link e MFP password e i due flag necessari verranno gestiti dalla pagina di installazione.
 
@@ -93,8 +124,8 @@ Usa questo metodo se vuoi modificare il codice sorgente, testare nuove funzional
 1.  **Clona il repository:**
 
     ```bash
-    git clone [https://github.com/qwertyuiop8899/StreamVix-AU.git](https://github.com/qwertyuiop8899/StreamVix-AU.git) # Assicurati che sia il repository corretto di StreamViX-AU
-    cd StreamVix-AU # Entra nella directory del progetto appena clonata
+    git clone https://github.com/qwertyuiop8899/StreamViX.git # Assicurati che sia il repository corretto di StreamViX
+    cd StreamViX # Entra nella directory del progetto appena clonata
     ```
 
 2.  **Installa le dipendenze:**
