@@ -1202,7 +1202,7 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
 
     // Controlla se il canale è in chiaro (da rai1 a rai4k)
     const isFreeToAir = isFreeToAirChannel(cleanId);
-    console.log(`� Fast processing for channel ${cleanId}, free-to-air: ${isFreeToAir}`);
+    console.log(`⚡ Fast processing for channel ${cleanId}, free-to-air: ${isFreeToAir}`);
 
     // === PARTE 1: LINK STATICI VELOCI (0ms delay) ===
     
@@ -1262,17 +1262,17 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       console.log(`⚡ Fast: Added Daddy proxy stream`);
     }
 
-    // === PARTE 2: AGGIUNGI VAVOO ALLA RISPOSTA IMMEDIATA ===
-    // Prova a ottenere il link Vavoo con timeout molto breve (1 secondo)
+    // === PARTE 2: AGGIUNGI VAVOO SE È GIÀ IN CACHE, ALTRIMENTI PROVA IN BACKGROUND ===
     const channelName = (channel as any).name;
     const now = Date.now();
+    let vavooAddedFromCache = false;
+    
     if (channelName && tvProxyUrl) {
       try {
-        console.log(`🎬 Fast: Trying Vavoo for ${channelName} with 1s timeout...`);
+        console.log(`🎬 Fast: Checking cached Vavoo for ${channelName}...`);
         
-        // Prova prima dalla cache
+        // Controlla PRIMA la cache per risposta immediata
         const cached = vavooCache[channelName];
-        const now = Date.now();
         
         if (cached && (now - cached.timestamp) < VAVOO_CACHE_TTL) {
           console.log(`🚀 Fast: Vavoo cache HIT for ${channelName}`);
@@ -1283,76 +1283,63 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
               title: `📺 ${channelName} (V)`
             });
             console.log(`✅ Fast: Added cached Vavoo stream`);
+            vavooAddedFromCache = true;
           }
         } else {
-          // Prova fetch veloce (1 secondo timeout)
-          console.log(`⚡ Fast: Fetching Vavoo with 1s timeout for ${channelName}`);
-          const vavooPromise = new Promise<string | null>((resolve) => {
-            const timeout = setTimeout(() => {
-              console.log(`⏰ Fast: Vavoo 1s timeout for ${channelName}`);
-              resolve(null);
-            }, 1000);
-
-            const options = {
-              timeout: 1000,
-              env: {
-                ...process.env,
-                PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
-              }
-            };
-            
-            execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName, '--original-link'], options, (error: Error | null, stdout: string, stderr: string) => {
-              clearTimeout(timeout);
-              
-              if (error || !stdout || stdout.trim() === '') {
-                resolve(null);
-              } else {
-                const result = stdout.trim();
-                console.log(`✅ Fast: Vavoo found for ${channelName}: ${result}`);
-                resolve(result);
-              }
-            });
-          });
-          
-          const vavooOriginalLink = await vavooPromise;
-          if (vavooOriginalLink) {
-            // Salva in cache
-            vavooCache[channelName] = {
-              link: vavooOriginalLink,
-              timestamp: now
-            };
-            
-            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
-            streams.push({
-              url: vavooProxyUrl,
-              title: `📺 ${channelName} (V)`
-            });
-            console.log(`✅ Fast: Added fresh Vavoo stream`);
-          } else {
-            console.log(`❌ Fast: No Vavoo link found for ${channelName} in 1s`);
-          }
+          console.log(`⚡ Fast: No valid Vavoo cache for ${channelName}, will fetch in background with 5s timeout`);
         }
       } catch (error) {
-        console.error(`❌ Fast: Vavoo error for ${channelName}:`, error);
+        console.error(`❌ Fast: Vavoo cache check error for ${channelName}:`, error);
       }
     }
 
-    // === RESTITUISCI IMMEDIATAMENTE I LINK (incluso Vavoo se trovato) ===
+    // === RESTITUISCI IMMEDIATAMENTE I LINK STATICI ===
     if (streams.length > 0) {
       console.log(`🚀 Returning ${streams.length} FAST streams immediately for ${channel.name}`);
       res.json({ streams });
       
-      // === PARTE 3: VAVOO IN BACKGROUND per aggiornare cache ===
-      // Solo se non abbiamo già un link Vavoo fresco
-      if (channelName && tvProxyUrl && (!vavooCache[channelName] || (now - vavooCache[channelName].timestamp) > VAVOO_CACHE_TTL)) {
-        // Esegui Vavoo in background senza bloccare
+      // === PARTE 3: VAVOO IN BACKGROUND SEMPRE (se non già aggiunto da cache) ===
+      if (!vavooAddedFromCache && channelName && tvProxyUrl) {
+        // Esegui Vavoo in background con timeout di 5 secondi SEMPRE
         setImmediate(async () => {
           try {
-            console.log(`� Background: Trying Vavoo for ${channelName}...`);
-            const vavooOriginalLink = await getVavooOriginalLinkCached(channelName);
+            console.log(`🔄 Background: Fetching Vavoo for ${channelName} with 5s timeout...`);
+            
+            const vavooOriginalLink = await new Promise<string | null>((resolve) => {
+              const timeout = setTimeout(() => {
+                console.log(`⏰ Background: Vavoo timeout (5s) for ${channelName}`);
+                resolve(null);
+              }, 5000); // 5 secondi di timeout
+
+              const options = {
+                timeout: 5000,
+                env: {
+                  ...process.env,
+                  PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
+                }
+              };
+              
+              execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName, '--original-link'], options, (error: Error | null, stdout: string, stderr: string) => {
+                clearTimeout(timeout);
+                
+                if (error || !stdout || stdout.trim() === '') {
+                  console.log(`❌ Background: Vavoo resolution failed for ${channelName}: ${error?.message || 'No output'}`);
+                  resolve(null);
+                } else {
+                  const result = stdout.trim();
+                  console.log(`✅ Background: Vavoo found for ${channelName}: ${result}`);
+                  resolve(result);
+                }
+              });
+            });
+            
             if (vavooOriginalLink) {
-              console.log(`✅ Background: Found Vavoo link for ${channelName}: ${vavooOriginalLink}`);
-              // Il link Vavoo sarà disponibile per la prossima richiesta o per aggiornamenti futuri
+              // Salva in cache per le prossime richieste
+              vavooCache[channelName] = {
+                link: vavooOriginalLink,
+                timestamp: Date.now()
+              };
+              console.log(`✅ Background: Vavoo link cached for ${channelName} - will be available immediately next time`);
             } else {
               console.log(`❌ Background: No Vavoo link found for ${channelName}`);
             }
@@ -2043,7 +2030,7 @@ app.get('*', (req: Request, res: Response) => {
     });
 });
 
-const PORT = process.env.PORT || 7860;
+const PORT = process.env.PORT || 7861;
 app.listen(PORT, () => {
     console.log(`Addon server running on http://127.0.0.1:${PORT}`);
 });
