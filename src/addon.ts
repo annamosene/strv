@@ -31,6 +31,16 @@ interface AddonConfig {
   [key: string]: any;
 }
 
+// Cache globale per la configurazione
+const configCache: AddonConfig = {
+  mediaFlowProxyUrl: process.env.MFP_URL,
+  mediaFlowProxyPassword: process.env.MFP_PSW,
+  mfpProxyUrl: process.env.MFP_URL,
+  mfpProxyPassword: process.env.MFP_PSW,
+  tvProxyUrl: process.env.TV_PROXY_URL,
+  enableLiveTV: 'on'
+};
+
 // Base manifest configuration
 const baseManifest: Manifest = {
     id: "org.stremio.vixcloud",
@@ -881,11 +891,20 @@ function createBuilder(config: AddonConfig = {}) {
                 
                 // === LOGICA TV ===
                 if (type === "tv") {
-                    const cleanId = id.startsWith('tv:') ? id.replace('tv:', '') : id;
+                    // Improved channel ID parsing to handle different formats from Stremio
+                    let cleanId = id;
+                    if (id.startsWith('tv:')) {
+                        cleanId = id.replace('tv:', '');
+                    } else if (id.startsWith('tv%3A')) {
+                        cleanId = id.replace('tv%3A', '');
+                    }
+                    
+                    debugLog(`Looking for channel with ID: ${cleanId} (original ID: ${id})`);
                     const channel = tvChannels.find((c: any) => c.id === cleanId);
                     
                     if (!channel) {
                         console.log(`❌ Channel ${id} not found`);
+                        debugLog(`❌ Channel not found in the TV channels list. Original ID: ${id}, Clean ID: ${cleanId}`);
                         return { streams: [] };
                     }
                     
@@ -940,101 +959,120 @@ function createBuilder(config: AddonConfig = {}) {
                             staticUrlD: staticUrlD || 'missing'
                         });
                         
-                        // Forza l'uso della configurazione MFP per canali Sky se non c'è staticUrlD
-                        if (!staticUrlD && (!mfpUrl || !mfpPsw)) {
-                            debugLog(`⚠️ Sky channel ${channelName} requires proxy but config is missing. Applying fallback config.`);
-                            mfpUrl = 'http://192.168.1.100:9000';
-                            mfpPsw = 'test';
+                        // SOLUZIONE RAPIDA: Forza sempre la configurazione MFP per tutti i canali Sky
+                        debugLog(`🔧 FORCING MFP config for Sky channel: ${channelName}`);
+                        mfpUrl = 'http://192.168.1.100:9000';
+                        mfpPsw = 'test';
+                        
+                        // SOLUZIONE SPECIFICA per Sky Cinema Due
+                        if (cleanId === 'skycinemadue') {
+                            debugLog(`🎬 SPECIAL FIX for Sky Cinema Due`);
+                            // Assicuriamoci che abbia gli stream URL corretti
+                            if (!staticUrl && !staticUrl2) {
+                                debugLog(`⚠️ Sky Cinema Due missing stream URLs, setting defaults`);
+                                // Aggiungi URL di default se mancanti
+                                (channel as any).staticUrl = "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemadue)/master_2hr-aac.mpd&key_id=11152c4ea1a3bffdd277ce333e54631a&key=17f0c028800dbcb294b9aebbae1f7e0c";
+                                (channel as any).staticUrl2 = "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skycinemadue)/master_2hr-all.mpd&key_id=11188795ebfd4e72afb27b55b8e2905b&key=41e5b5a8bf54ce8d23873eb46761c288";
+                            }
                         }
                     }
                     
-                    // 1. Stream via staticUrl
+                    // 1. Stream via staticUrl (SEMPRE, per tutti i canali!)
                     if (staticUrl) {
                         hasStaticStream = true;
-                        if (isFreeToAir) {
+                        if (mfpUrl && mfpPsw && !isFreeToAir) {
+                            // Canale a pagamento con proxy
+                            let proxyUrl: string;
+                            if (staticUrl.includes('.mpd')) {
+                                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+                                debugLog(`Generated MPD proxy URL for Stremio: ${proxyUrl.substring(0, 50)}...`);
+                            } else {
+                                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl)}`;
+                            }
+                            streams.push({
+                                url: proxyUrl,
+                                title: `🔴 ${(channel as any).name} (Proxy)`
+                            });
+                        } else {
+                            // Canale free-to-air o senza proxy (direct)
                             streams.push({
                                 url: staticUrl,
                                 title: `🔴 ${(channel as any).name} (Direct)`
                             });
-                        } else {
-                            if (mfpUrl && mfpPsw) {
-                                let proxyUrl: string;
-                                if (staticUrl.includes('.mpd')) {
-                                    proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-                                } else {
-                                    proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
-                                }
-                                streams.push({
-                                    url: proxyUrl,
-                                    title: `🔴 ${(channel as any).name} (Proxy)`
-                                });
-                            } else {
-                                streams.push({
-                                    url: staticUrl,
-                                    title: `🔴 ${(channel as any).name} (Direct)`
-                                });
-                            }
                         }
                     }
 
-                    // 2. Stream via staticUrl2
+                    // 2. Stream via staticUrl2 (SEMPRE, per tutti i canali!)
                     if (staticUrl2) {
                         hasStaticStream = true;
-                        if (isFreeToAir) {
+                        if (mfpUrl && mfpPsw && !isFreeToAir) {
+                            // Canale a pagamento con proxy
+                            let proxyUrl: string;
+                            if (staticUrl2.includes('.mpd')) {
+                                proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl2)}`;
+                                debugLog(`Generated MPD proxy URL for Stremio (HD): ${proxyUrl.substring(0, 50)}...`);
+                            } else {
+                                proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent(staticUrl2)}`;
+                            }
+                            streams.push({
+                                url: proxyUrl,
+                                title: `🎬 ${(channel as any).name} (HD)`
+                            });
+                        } else {
+                            // Canale free-to-air o senza proxy (direct)
                             streams.push({
                                 url: staticUrl2,
                                 title: `🎬 ${(channel as any).name} (HD)`
                             });
-                        } else {
-                            if (mfpUrl && mfpPsw) {
-                                let proxyUrl: string;
-                                if (staticUrl2.includes('.mpd')) {
-                                    proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-                                } else {
-                                    proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
-                                }
-                                streams.push({
-                                    url: proxyUrl,
-                                    title: `🎬 ${(channel as any).name} (HD)`
-                                });
-                            } else {
-                                streams.push({
-                                    url: staticUrl2,
-                                    title: `🎬 ${(channel as any).name} (HD)`
-                                });
-                            }
                         }
                     }
 
-                    // 3. Stream via staticUrlD
+                    // 3. Stream via staticUrlD (SEMPRE, per tutti i canali!)
                     if (staticUrlD) {
                         hasStaticStream = true;
-                        if (tvProxyUrl) {
-                            const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
-                            streams.push({
-                                url: daddyProxyUrl,
-                                title: `📱 ${(channel as any).name} (D)`
-                            });
-                        } else {
-                            streams.push({
-                                url: staticUrlD,
-                                title: `📱 ${(channel as any).name} (D)`
-                            });
-                        }
+                        const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080'; // Fallback proxy
+                        const daddyProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
+                        streams.push({
+                            url: daddyProxyUrl,
+                            title: `📱 ${(channel as any).name} (D)`
+                        });
                     }
                     
-                    // 4. Stream via cache Vavoo (se esiste già nella cache)
+                    // 4. Stream via cache Vavoo (SEMPRE, per tutti i canali!)
                     let vavooStreamAdded = false;
-                    if (channelName && tvProxyUrl && vavooCache.links.has(channelName)) {
-                        const vavooOriginalLink = vavooCache.links.get(channelName);
-                        if (vavooOriginalLink) {
-                            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
-                            streams.push({
-                                url: vavooProxyUrl,
-                                title: `🌟 ${(channel as any).name} (Vavoo)`
-                            });
-                            vavooStreamAdded = true;
-                            console.log(`✅ Stream Vavoo aggiunto dalla cache per ${channelName}`);
+                    if (channelName) {
+                        // Se abbiamo il link nella cache, usalo subito
+                        if (vavooCache.links.has(channelName)) {
+                            const vavooOriginalLink = vavooCache.links.get(channelName);
+                            if (vavooOriginalLink) {
+                                // Usa tvProxyUrl se disponibile, altrimenti prova con un proxy di default
+                                const proxyToUse = tvProxyUrl || 'http://192.168.1.100:8080'; // Fallback proxy
+                                const vavooProxyUrl = `${proxyToUse}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
+                                streams.push({
+                                    url: vavooProxyUrl,
+                                    title: `🌟 ${(channel as any).name} (Vavoo)`
+                                });
+                                vavooStreamAdded = true;
+                                console.log(`✅ Stream Vavoo aggiunto dalla cache per ${channelName}`);
+                            }
+                        }
+                        
+                        // SEMPRE prova a risolvere Vavoo per tutti i canali (anche se abbiamo già uno stream)
+                        if (!vavooStreamAdded) {
+                            debugLog(`🔍 Tentativo risoluzione Vavoo per ${channelName}`);
+                            // Risoluzione sincrona immediata (con timeout breve)
+                            resolveVavooChannelByName(channelName)
+                                .then(vavooOriginalLink => {
+                                    if (vavooOriginalLink) {
+                                        debugLog(`✅ Link Vavoo risolto per ${channelName}: ${vavooOriginalLink.substring(0, 50)}...`);
+                                        // Aggiorna la cache per il prossimo utilizzo
+                                        vavooCache.links.set(channelName, vavooOriginalLink);
+                                        saveVavooCache();
+                                    }
+                                })
+                                .catch(error => {
+                                    debugLog(`⚠️ Errore Vavoo per ${channelName}:`, error);
+                                });
                         }
                     }
 
@@ -1047,47 +1085,61 @@ function createBuilder(config: AddonConfig = {}) {
 
                     debugLog(`Generated ${finalStreams.length} streams for ${channelName}`, finalStreams);
 
-                    // Se non abbiamo aggiunto uno stream Vavoo dalla cache, tenta di risolvere in background
-                    if (channelName && tvProxyUrl && !vavooStreamAdded) {
-                        debugLog(`Richiedendo risoluzione Vavoo in background per ${channelName}`);
+                    // SEMPRE tenta risoluzione Vavoo in background per tutti i canali
+                    if (channelName) {
+                        debugLog(`🔍 Richiedendo risoluzione Vavoo in background per ${channelName}`);
                         
                         // Risoluzione Vavoo in background (non blocca la risposta)
                         resolveVavooChannelByName(channelName)
                             .then(vavooOriginalLink => {
                                 if (vavooOriginalLink) {
-                                    debugLog(`Link Vavoo risolto in background per ${channelName}: ${vavooOriginalLink.substring(0, 50)}...`);
+                                    debugLog(`✅ Link Vavoo risolto in background per ${channelName}: ${vavooOriginalLink.substring(0, 50)}...`);
+                                    // Aggiorna la cache
+                                    vavooCache.links.set(channelName, vavooOriginalLink);
+                                    saveVavooCache();
                                 }
                             })
                             .catch(error => {
-                                debugLog(`Errore background Vavoo per ${channelName}:`, error);
+                                debugLog(`⚠️ Errore background Vavoo per ${channelName}:`, error);
                             });
                     }
 
-                    // Se non abbiamo stream statici e non è stato possibile aggiungere uno stream Vavoo,
-                    // aggiungiamo uno stream fallback (placeholder) per evitare che il canale appaia non disponibile
+                    // Se ANCORA non abbiamo stream, aggiungiamo un fallback
                     if (finalStreams.length === 0) {
-                        debugLog(`Nessuno stream disponibile per ${channelName}, aggiungendo fallback`);
+                        debugLog(`⚠️ Nessuno stream disponibile per ${channelName}, aggiungendo fallback`);
+                        finalStreams.push({
+                            name: 'StreamViX TV',
+                            title: `⚠️ ${(channel as any).name} (Stream non disponibile)`,
+                            url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803'
+                        });
+                    }
+
+                    // After generating streams, write a debug log with the channel info and the total number of streams
+                    const finalStreamsCount = finalStreams.length;
+                    debugLog(`Restituendo ${finalStreamsCount} stream TV per ${channelName}`);
+                    
+                    // Add explicit error handling for empty streams
+                    if (finalStreamsCount === 0) {
+                        debugLog(`⚠️ No streams generated for ${channelName} (${cleanId}). Config used: ${JSON.stringify({
+                            mfpUrl,
+                            hasMfpPsw: !!mfpPsw,
+                            hasStaticUrl: !!staticUrl,
+                            hasStaticUrl2: !!staticUrl2,
+                            isFreeToAir,
+                            isSkyChannel
+                        })}`);
                         
-                        // Controlla se è un canale Sky senza proxy configurato
-                        if ((cleanId.startsWith('sky-') || (channel as any).category === 'sky') && (!mfpUrl || !mfpPsw)) {
-                            debugLog(`❌ SKY CHANNEL ${channelName} richiede configurazione proxy ma non è stata fornita`);
-                            // Usa l'URL di un canale RAI come fallback, ma mostra che è necessario il proxy
-                            finalStreams.push({
-                                name: 'StreamViX TV',
-                                title: `⚠️ ${(channel as any).name} (Proxy MFP richiesto!)`,
-                                url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803'
-                            });
-                        } else {
-                            // Usa l'URL di un canale RAI come fallback per altri casi
-                            finalStreams.push({
-                                name: 'StreamViX TV',
-                                title: `⚠️ ${(channel as any).name} (Fallback - Tentativo riconnessione)`,
-                                url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803'
-                            });
+                        // Log to the debug file
+                        try {
+                            const logPath = path.join(__dirname, '../debug.log');
+                            const timestamp = new Date().toISOString();
+                            const logMessage = `[${timestamp}] ⚠️ No streams for ${channelName} (${cleanId}). This is an error that needs investigation.\n`;
+                            fs.appendFileSync(logPath, logMessage);
+                        } catch (e) {
+                            console.error('Error writing to debug log file:', e);
                         }
                     }
-
-                    debugLog(`Restituendo ${finalStreams.length} stream TV per ${channel.name}`);
+                    
                     return { streams: finalStreams };
                 }
                 
@@ -1277,23 +1329,64 @@ app.use((req: Request, res: Response, next: NextFunction) => {
             mfpProxyPassword: 'test',
             enableLiveTV: 'on'
         };
+        
+        // Aggiorna la cache di configurazione
+        Object.assign(configCache, hardcodedConfig);
+        debugLog('📌 Updated config cache with hardcoded values:', configCache);
+        
         const builder = createBuilder(hardcodedConfig);
         const addonInterface = builder.getInterface();
         const router = getRouter(addonInterface);
         return router(req, res, next);
     }
     
-    // Se il config string è vuoto o è manifest.json, usa configurazione di default
-    if (!configString || configString === 'manifest.json' || configString === 'stream' || configString === 'meta') {
-        debugLog('🔧 Using default configuration (no config string or system endpoint)');
-        const builder = createBuilder({});
+    // Se il config string non è vuoto e sembra essere una configurazione valida
+    if (configString && configString.length > 10 && !configString.startsWith('stream') && !configString.startsWith('meta') && !configString.startsWith('manifest')) {
+        const parsedConfig = parseConfigFromArgs(configString);
+        
+        // Se abbiamo trovato una configurazione valida, la salviamo nella cache
+        if (Object.keys(parsedConfig).length > 0) {
+            debugLog('📌 Found valid config in URL, saving to cache');
+            Object.assign(configCache, parsedConfig);
+            debugLog('📌 Updated config cache:', configCache);
+            
+            const builder = createBuilder(parsedConfig);
+            const addonInterface = builder.getInterface();
+            const router = getRouter(addonInterface);
+            return router(req, res, next);
+        }
+    }
+    
+    // Se il config string è vuoto o è manifest.json, o se è una richiesta di stream diretta, usa la configurazione dalla cache
+    if (!configString || configString === 'manifest.json' || configString === 'stream' || configString === 'meta' || 
+        req.url.includes('/stream/tv/') || req.url.includes('/stream/tv%3A')) {
+        debugLog('🔧 Using cached configuration for endpoint: ' + req.url);
+        debugLog('🔧 Current config cache:', configCache);
+        
+        // FORZA SEMPRE la configurazione MFP per le richieste di stream TV
+        if (req.url.includes('/stream/tv/') || req.url.includes('/stream/tv%3A')) {
+            debugLog('📺 TV Stream request detected, forcing MFP configuration');
+            configCache.mfpProxyUrl = 'http://192.168.1.100:9000';
+            configCache.mfpProxyPassword = 'test';
+            configCache.enableLiveTV = 'on';
+            configCache.tvProxyUrl = 'http://192.168.1.100:8080'; // Proxy per Vavoo
+        }
+        
+        const builder = createBuilder(configCache);
         const addonInterface = builder.getInterface();
         const router = getRouter(addonInterface);
         return router(req, res, next);
     }
     
     // Per tutti gli altri casi, prova con il parser normale
-    const config = parseConfigFromArgs(configString);
+    let config = parseConfigFromArgs(configString);
+    
+    // Se non è stata trovata una configurazione, usa quella dalla cache
+    if (Object.keys(config).length === 0) {
+        debugLog('🔧 No config found in URL, using cached configuration');
+        config = { ...configCache };
+    }
+    
     debugLog(`🔧 Final parsed config:`, config);
     
     const builder = createBuilder(config);
