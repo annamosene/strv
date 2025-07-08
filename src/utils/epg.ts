@@ -42,6 +42,8 @@ export class EPGManager {
     private config: EPGConfig;
     private cacheFile: string;
     private updateInterval: number = 24 * 60 * 60 * 1000; // 24 ore
+    private timeZoneOffset: string = '+2:00'; // Fuso orario italiano
+    private offsetMinutes: number = 120; // Offset in minuti per l'Italia
 
     constructor(config: EPGConfig) {
         this.config = {
@@ -61,7 +63,27 @@ export class EPGManager {
             fs.mkdirSync(this.config.cacheDir!, { recursive: true });
         }
         
+        this.validateAndSetTimezone();
         this.loadFromCache();
+    }
+
+    /**
+     * Valida e imposta il fuso orario
+     */
+    private validateAndSetTimezone(): void {
+        const tzRegex = /^[+-]\d{1,2}:\d{2}$/;
+        const timeZone = process.env.TIMEZONE_OFFSET || '+2:00';
+        
+        if (!tzRegex.test(timeZone)) {
+            this.timeZoneOffset = '+2:00';
+            this.offsetMinutes = 120;
+            return;
+        }
+        
+        this.timeZoneOffset = timeZone;
+        const [hours, minutes] = this.timeZoneOffset.substring(1).split(':');
+        this.offsetMinutes = (parseInt(hours) * 60 + parseInt(minutes)) * 
+                             (this.timeZoneOffset.startsWith('+') ? 1 : -1);
     }
 
     /**
@@ -324,25 +346,51 @@ export class EPGManager {
      */
     private parseEPGDate(epgDate: string): Date {
         // Formato EPG: YYYYMMDDHHMMSS +ZZZZ
-        const year = parseInt(epgDate.substr(0, 4));
-        const month = parseInt(epgDate.substr(4, 2)) - 1; // Month is 0-indexed
-        const day = parseInt(epgDate.substr(6, 2));
-        const hour = parseInt(epgDate.substr(8, 2));
-        const minute = parseInt(epgDate.substr(10, 2));
-        const second = parseInt(epgDate.substr(12, 2));
-
-        return new Date(year, month, day, hour, minute, second);
+        if (!epgDate) return new Date();
+        
+        try {
+            const regex = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+-]\d{4})$/;
+            const match = epgDate.match(regex);
+            
+            if (!match) {
+                // Fallback per formato senza timezone
+                const year = parseInt(epgDate.substr(0, 4));
+                const month = parseInt(epgDate.substr(4, 2)) - 1; // Month is 0-indexed
+                const day = parseInt(epgDate.substr(6, 2));
+                const hour = parseInt(epgDate.substr(8, 2));
+                const minute = parseInt(epgDate.substr(10, 2));
+                const second = parseInt(epgDate.substr(12, 2));
+                
+                // Assumiamo UTC e convertiamo al fuso orario italiano
+                const utcDate = new Date(Date.UTC(year, month, day, hour, minute, second));
+                return new Date(utcDate.getTime() + (this.offsetMinutes * 60 * 1000));
+            }
+            
+            const [_, year, month, day, hour, minute, second, timezone] = match;
+            const tzHours = timezone.substring(0, 3);
+            const tzMinutes = timezone.substring(3);
+            const isoString = `${year}-${month}-${day}T${hour}:${minute}:${second}${tzHours}:${tzMinutes}`;
+            
+            const date = new Date(isoString);
+            return isNaN(date.getTime()) ? new Date() : date;
+        } catch (error) {
+            console.error('Errore nel parsing della data EPG:', error);
+            return new Date();
+        }
     }
 
     /**
-     * Formatta la data per la visualizzazione
+     * Formatta la data per la visualizzazione usando il fuso orario italiano
      */
     public formatTime(epgDate: string): string {
         const date = this.parseEPGDate(epgDate);
-        return date.toLocaleTimeString('it-IT', { 
+        // Applica l'offset del fuso orario italiano se non è già stato applicato
+        const localDate = new Date(date.getTime() + (this.offsetMinutes * 60 * 1000));
+        return localDate.toLocaleTimeString('it-IT', { 
             hour: '2-digit', 
-            minute: '2-digit' 
-        });
+            minute: '2-digit',
+            hour12: false
+        }).replace(/\./g, ':');
     }
 
     /**
