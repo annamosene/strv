@@ -8,6 +8,24 @@ import { KitsuProvider } from './kitsu';
 async function invokePythonScraper(args: string[]): Promise<any> {
     const scriptPath = path.join(__dirname, 'animesaturn.py');
     const command = 'python3';
+    
+    // Ottieni la config globale se disponibile
+    let mfpProxyUrl = '';
+    let mfpProxyPassword = '';
+    try {
+        // Cerca la config dall'ambiente
+        mfpProxyUrl = process.env.MFP_PROXY_URL || process.env.MFP_URL || '';
+        mfpProxyPassword = process.env.MFP_PROXY_PASSWORD || process.env.MFP_PSW || '';
+    } catch (e) {
+        console.error('Error getting MFP config:', e);
+    }
+    
+    // Aggiungi gli argomenti proxy MFP se presenti
+    if (mfpProxyUrl && mfpProxyPassword) {
+        args.push('--mfp-proxy-url', mfpProxyUrl);
+        args.push('--mfp-proxy-password', mfpProxyPassword);
+    }
+    
     return new Promise((resolve, reject) => {
         const pythonProcess = spawn(command, [scriptPath, ...args]);
         let stdout = '';
