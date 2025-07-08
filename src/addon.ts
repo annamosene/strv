@@ -10,6 +10,11 @@ import { formatMediaFlowUrl } from './utils/mediaflow';
 import { AnimeUnityConfig } from "./types/animeunity";
 import { EPGManager } from './utils/epg';
 import { execFile } from 'child_process';
+import * as crypto from 'crypto';
+import * as util from 'util';
+
+// Promisify execFile
+const execFilePromise = util.promisify(execFile);
 
 // Interfaccia per la configurazione URL
 interface AddonConfig {
@@ -171,10 +176,235 @@ let domains: any = {};
 let epgConfig: any = {};
 let epgManager: EPGManager | null = null;
 
+// Cache per i link Vavoo
+interface VavooCache {
+    timestamp: number;
+    links: Map<string, string>;
+    updating: boolean;
+}
+
+const vavooCache: VavooCache = {
+    timestamp: 0,
+    links: new Map<string, string>(),
+    updating: false
+};
+
+// Path del file di cache per Vavoo
+const vavaoCachePath = path.join(__dirname, '../cache/vavoo_cache.json');
+
+// Funzione per caricare la cache Vavoo dal file
+function loadVavooCache(): void {
+    try {
+        if (fs.existsSync(vavaoCachePath)) {
+            const cacheData = JSON.parse(fs.readFileSync(vavaoCachePath, 'utf-8'));
+            vavooCache.timestamp = cacheData.timestamp || 0;
+            vavooCache.links = new Map(Object.entries(cacheData.links || {}));
+            console.log(`📺 Vavoo cache caricata con ${vavooCache.links.size} canali, aggiornata il: ${new Date(vavooCache.timestamp).toLocaleString()}`);
+        } else {
+            console.log(`📺 File cache Vavoo non trovato, verrà creato al primo aggiornamento`);
+        }
+    } catch (error) {
+        console.error('❌ Errore nel caricamento della cache Vavoo:', error);
+    }
+}
+
+// Funzione per salvare la cache Vavoo su file
+function saveVavooCache(): void {
+    try {
+        // Assicurati che la directory cache esista
+        const cacheDir = path.dirname(vavaoCachePath);
+        if (!fs.existsSync(cacheDir)) {
+            fs.mkdirSync(cacheDir, { recursive: true });
+        }
+
+        const cacheData = {
+            timestamp: vavooCache.timestamp,
+            links: Object.fromEntries(vavooCache.links)
+        };
+        
+        // Salva prima in un file temporaneo e poi rinomina per evitare file danneggiati
+        const tempPath = `${vavaoCachePath}.tmp`;
+        fs.writeFileSync(tempPath, JSON.stringify(cacheData, null, 2), 'utf-8');
+        
+        // Rinomina il file temporaneo nel file finale
+        fs.renameSync(tempPath, vavaoCachePath);
+        
+        console.log(`📺 Vavoo cache salvata con ${vavooCache.links.size} canali, timestamp: ${new Date(vavooCache.timestamp).toLocaleString()}`);
+    } catch (error) {
+        console.error('❌ Errore nel salvataggio della cache Vavoo:', error);
+    }
+}
+
+// Funzione per aggiornare la cache Vavoo
+async function updateVavooCache(): Promise<boolean> {
+    if (vavooCache.updating) {
+        console.log(`📺 Aggiornamento Vavoo già in corso, skip`);
+        return false;
+    }
+
+    vavooCache.updating = true;
+    console.log(`📺 Avvio aggiornamento cache Vavoo...`);
+    
+    try {
+        // Recupera tutti i nomi dei canali dai canali configurati
+        const channelNames = tvChannels.map(channel => channel.name).filter(Boolean);
+        
+        // Aggiorna la cache per tutti i canali
+        const updatedLinks = new Map<string, string>();
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Ottieni la lista completa Vavoo
+        try {
+            const result = await execFilePromise('python3', [
+                path.join(__dirname, '../vavoo_resolver.py'), 
+                '--dump-channels'
+            ], { timeout: 30000 });
+            
+            if (result.stdout) {
+                try {
+                    const channels = JSON.parse(result.stdout);
+                    console.log(`📺 Recuperati ${channels.length} canali da Vavoo`);
+                    
+                    // Funzione di normalizzazione per confronti più efficaci
+                    const normalizeChannelName = (name: string): string => {
+                        return name.toLowerCase()
+                            .replace(/[^\w\s]/g, '') // Rimuove punteggiatura
+                            .replace(/\s+/g, '')     // Rimuove spazi
+                            .replace(/hd$/i, '')     // Rimuove HD alla fine
+                            .trim();
+                    };
+                    
+                    // Crea un indice veloce per la ricerca
+                    const vavooChannelMap = new Map();
+                    channels.forEach((c: any) => {
+                        if (c.name) {
+                            vavooChannelMap.set(normalizeChannelName(c.name), c);
+                            
+                            // Aggiungi anche gli alias all'indice
+                            if (c.aliases && Array.isArray(c.aliases)) {
+                                c.aliases.forEach((alias: string) => {
+                                    vavooChannelMap.set(normalizeChannelName(alias), c);
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Per ogni canale TV configurato, cerca una corrispondenza nella lista Vavoo
+                    for (const tvChannel of tvChannels) {
+                        if (!tvChannel.name) continue;
+                        
+                        const normalizedName = normalizeChannelName(tvChannel.name);
+                        
+                        // Prima cerca una corrispondenza esatta
+                        if (vavooChannelMap.has(normalizedName)) {
+                            const matchingChannel = vavooChannelMap.get(normalizedName);
+                            if (matchingChannel && matchingChannel.url) {
+                                updatedLinks.set(tvChannel.name, matchingChannel.url);
+                                successCount++;
+                                continue;
+                            }
+                        }
+                        
+                        // Se non troviamo una corrispondenza diretta, cerchiamo una corrispondenza parziale
+                        let bestMatch = null;
+                        let bestMatchScore = 0;
+                        
+                        for (const [normalizedVavooName, vavooChannel] of vavooChannelMap.entries()) {
+                            // Corrispondenza se una stringa è contenuta nell'altra
+                            if (normalizedVavooName.includes(normalizedName) || normalizedName.includes(normalizedVavooName)) {
+                                const lengthScore = Math.min(normalizedVavooName.length, normalizedName.length) / 
+                                                  Math.max(normalizedVavooName.length, normalizedName.length);
+                                
+                                if (lengthScore > bestMatchScore) {
+                                    bestMatch = vavooChannel;
+                                    bestMatchScore = lengthScore;
+                                }
+                            }
+                        }
+                        
+                        if (bestMatch && bestMatch.url && bestMatchScore > 0.6) {
+                            updatedLinks.set(tvChannel.name, bestMatch.url);
+                            successCount++;
+                            console.log(`📺 Corrispondenza parziale trovata per ${tvChannel.name} -> ${bestMatch.name} (score: ${bestMatchScore.toFixed(2)})`);
+                        } else {
+                            console.log(`⚠️ Nessuna corrispondenza trovata per ${tvChannel.name}`);
+                            errorCount++;
+                        }
+                    }
+                    
+                } catch (jsonError) {
+                    console.error('❌ Errore nel parsing del risultato JSON di Vavoo:', jsonError);
+                    throw jsonError;
+                }
+            }
+        } catch (execError) {
+            console.error('❌ Errore nell\'esecuzione dello script Vavoo:', execError);
+            throw execError;
+        }
+
+        // Preserva i link esistenti che non sono stati aggiornati
+        for (const [channelName, url] of vavooCache.links.entries()) {
+            if (!updatedLinks.has(channelName)) {
+                updatedLinks.set(channelName, url);
+            }
+        }
+
+        // Aggiorna la cache con i nuovi link
+        vavooCache.links = updatedLinks;
+        vavooCache.timestamp = Date.now();
+        
+        // Salva la cache su file
+        saveVavooCache();
+        
+        console.log(`✅ Cache Vavoo aggiornata: ${successCount} canali trovati, ${errorCount} non trovati, totale ${updatedLinks.size} canali in cache`);
+        return true;
+    } catch (error) {
+        console.error('❌ Errore durante l\'aggiornamento della cache Vavoo:', error);
+        return false;
+    } finally {
+        vavooCache.updating = false;
+    }
+}
+
 try {
+    // Assicurati che le directory di cache esistano
+    ensureCacheDirectories();
+    
     tvChannels = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/tv_channels.json'), 'utf-8'));
     domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
     epgConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/epg_config.json'), 'utf-8'));
+    
+    // Carica la cache Vavoo
+    loadVavooCache();
+    
+    // Aggiorna la cache Vavoo in background all'avvio
+    setTimeout(() => {
+        updateVavooCache().then(success => {
+            if (success) {
+                console.log(`✅ Cache Vavoo aggiornata con successo all'avvio`);
+            } else {
+                console.log(`⚠️ Aggiornamento cache Vavoo fallito all'avvio, verrà ritentato periodicamente`);
+            }
+        }).catch(error => {
+            console.error(`❌ Errore durante l'aggiornamento cache Vavoo all'avvio:`, error);
+        });
+    }, 2000);
+    
+    // Programma aggiornamenti periodici della cache Vavoo (ogni 12 ore)
+    const VAVOO_UPDATE_INTERVAL = 12 * 60 * 60 * 1000; // 12 ore in millisecondi
+    setInterval(() => {
+        console.log(`🔄 Aggiornamento periodico cache Vavoo avviato...`);
+        updateVavooCache().then(success => {
+            if (success) {
+                console.log(`✅ Cache Vavoo aggiornata periodicamente con successo`);
+            } else {
+                console.log(`⚠️ Aggiornamento periodico cache Vavoo fallito`);
+            }
+        }).catch(error => {
+            console.error(`❌ Errore durante l'aggiornamento periodico cache Vavoo:`, error);
+        });
+    }, VAVOO_UPDATE_INTERVAL);
     
     // Inizializza EPG Manager
     if (epgConfig.enabled) {
@@ -277,16 +507,48 @@ function getChannelCategories(channel: any): string[] {
     return categories;
 }
 
-// Funzione per risolvere un canale Vavoo tramite lo script Python
+// Funzione per risolvere un canale Vavoo usando la cache
 function resolveVavooChannelByName(channelName: string): Promise<string | null> {
     return new Promise((resolve) => {
+        // Check cache age
+        const cacheAge = Date.now() - vavooCache.timestamp;
+        const CACHE_MAX_AGE = 12 * 60 * 60 * 1000; // 12 ore in millisecondi
+        
+        // Se la cache è troppo vecchia o vuota, forzane l'aggiornamento (ma continua comunque a usarla)
+        if (cacheAge > CACHE_MAX_AGE || vavooCache.links.size === 0) {
+            console.log(`[Vavoo] Cache obsoleta o vuota (età: ${Math.round(cacheAge/3600000)}h), avvio aggiornamento in background...`);
+            // Non blocchiamo la risposta, aggiorniamo in background
+            updateVavooCache().catch(error => {
+                console.error(`[Vavoo] Errore nell'aggiornamento cache:`, error);
+            });
+        }
+        
+        // Cerca il canale nella cache
+        if (channelName && vavooCache.links.has(channelName)) {
+            const cachedUrl = vavooCache.links.get(channelName);
+            console.log(`[Vavoo] Trovato in cache: ${channelName} -> ${cachedUrl?.substring(0, 50)}...`);
+            return resolve(cachedUrl || null);
+        }
+        
+        // Se non è nella cache ma la cache è stata inizializzata
+        if (vavooCache.timestamp > 0) {
+            console.log(`[Vavoo] Canale ${channelName} non trovato in cache, aggiornamento necessario`);
+            // Tenta di aggiornare la cache in background se non è già in corso
+            if (!vavooCache.updating) {
+                updateVavooCache().catch(error => {
+                    console.error(`[Vavoo] Errore nell'aggiornamento cache:`, error);
+                });
+            }
+            return resolve(null);
+        }
+        
+        // Se la cache non è ancora stata inizializzata, chiama lo script Python come fallback
+        console.log(`[Vavoo] Cache non inizializzata, chiamo script Python per ${channelName}`);
         const timeout = setTimeout(() => {
-            console.log(`[Vavoo] Timeout for channel: ${channelName}`);
+            console.log(`[Vavoo] Timeout per canale: ${channelName}`);
             resolve(null);
         }, 5000);
 
-        console.log(`[Vavoo] Resolving channel: ${channelName}`);
-        
         const options = {
             timeout: 5000,
             env: {
@@ -310,7 +572,11 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
             }
             
             const result = stdout.trim();
-            console.log(`[Vavoo] Resolved ${channelName} to: ${result}`);
+            console.log(`[Vavoo] Resolved ${channelName} to: ${result.substring(0, 50)}...`);
+            
+            // Aggiorna la cache con questo risultato
+            vavooCache.links.set(channelName, result);
+            
             resolve(result);
         });
     });
@@ -520,11 +786,13 @@ function createBuilder(config: AddonConfig = {}) {
                     const staticUrl2 = (channel as any).staticUrl2;
                     const staticUrlD = (channel as any).staticUrlD;
                     const channelName = (channel as any).name;
+                    let hasStaticStream = false;
 
                     const isFreeToAir = isFreeToAirChannel(cleanId);
                     
                     // 1. Stream via staticUrl
                     if (staticUrl) {
+                        hasStaticStream = true;
                         if (isFreeToAir) {
                             streams.push({
                                 url: staticUrl,
@@ -553,6 +821,7 @@ function createBuilder(config: AddonConfig = {}) {
 
                     // 2. Stream via staticUrl2
                     if (staticUrl2) {
+                        hasStaticStream = true;
                         if (isFreeToAir) {
                             streams.push({
                                 url: staticUrl2,
@@ -581,6 +850,7 @@ function createBuilder(config: AddonConfig = {}) {
 
                     // 3. Stream via staticUrlD
                     if (staticUrlD) {
+                        hasStaticStream = true;
                         if (tvProxyUrl) {
                             const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
                             streams.push({
@@ -594,20 +864,19 @@ function createBuilder(config: AddonConfig = {}) {
                             });
                         }
                     }
-
-                    // 4. Vavoo in background (se disponibile)
-                    if (channelName && tvProxyUrl) {
-                        try {
-                            const vavooOriginalLink = await resolveVavooChannelByName(channelName);
-                            if (vavooOriginalLink) {
-                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
-                                streams.push({
-                                    url: vavooProxyUrl,
-                                    title: `🌟 ${(channel as any).name} (Vavoo)`
-                                });
-                            }
-                        } catch (error) {
-                            console.error(`❌ Vavoo error for ${channelName}:`, error);
+                    
+                    // 4. Stream via cache Vavoo (se esiste già nella cache)
+                    let vavooStreamAdded = false;
+                    if (channelName && tvProxyUrl && vavooCache.links.has(channelName)) {
+                        const vavooOriginalLink = vavooCache.links.get(channelName);
+                        if (vavooOriginalLink) {
+                            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
+                            streams.push({
+                                url: vavooProxyUrl,
+                                title: `🌟 ${(channel as any).name} (Vavoo)`
+                            });
+                            vavooStreamAdded = true;
+                            console.log(`✅ Stream Vavoo aggiunto dalla cache per ${channelName}`);
                         }
                     }
 
@@ -618,7 +887,36 @@ function createBuilder(config: AddonConfig = {}) {
                         url: s.url
                     }));
 
-                    console.log(`🚀 Returning ${finalStreams.length} TV streams for ${channel.name}`);
+                    // Se non abbiamo aggiunto uno stream Vavoo dalla cache, tenta di risolvere in background
+                    if (channelName && tvProxyUrl && !vavooStreamAdded) {
+                        console.log(`🔄 Richiedendo risoluzione Vavoo in background per ${channelName}`);
+                        
+                        // Risoluzione Vavoo in background (non blocca la risposta)
+                        resolveVavooChannelByName(channelName)
+                            .then(vavooOriginalLink => {
+                                if (vavooOriginalLink) {
+                                    console.log(`✅ Link Vavoo risolto in background per ${channelName}`);
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`❌ Errore background Vavoo per ${channelName}:`, error);
+                            });
+                    }
+
+                    // Se non abbiamo stream statici e non è stato possibile aggiungere uno stream Vavoo,
+                    // aggiungiamo uno stream fallback (placeholder) per evitare che il canale appaia non disponibile
+                    if (finalStreams.length === 0) {
+                        console.log(`⚠️ Nessuno stream disponibile per ${channelName}, aggiungendo fallback`);
+                        
+                        // Usa l'URL di un canale RAI come fallback, o un altro URL statico sicuro
+                        finalStreams.push({
+                            name: 'StreamViX TV',
+                            title: `⚠️ ${(channel as any).name} (Fallback - Tentativo riconnessione)`,
+                            url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803'
+                        });
+                    }
+
+                    console.log(`🚀 Restituendo ${finalStreams.length} stream TV per ${channel.name}`);
                     return { streams: finalStreams };
                 }
                 
@@ -807,3 +1105,20 @@ const PORT = process.env.PORT || 7860;
 app.listen(PORT, () => {
     console.log(`Addon server running on http://127.0.0.1:${PORT}`);
 });
+
+// Funzione per assicurarsi che le directory di cache esistano
+function ensureCacheDirectories(): void {
+    try {
+        // Directory per la cache Vavoo
+        const cacheDir = path.join(__dirname, '../cache');
+        if (!fs.existsSync(cacheDir)) {
+            fs.mkdirSync(cacheDir, { recursive: true });
+            console.log(`📁 Directory cache creata: ${cacheDir}`);
+        }
+    } catch (error) {
+        console.error('❌ Errore nella creazione delle directory di cache:', error);
+    }
+}
+
+// Assicurati che le directory di cache esistano all'avvio
+ensureCacheDirectories();
