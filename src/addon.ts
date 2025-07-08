@@ -1204,62 +1204,94 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     const isFreeToAir = isFreeToAirChannel(cleanId);
     console.log(`⚡ Fast processing for channel ${cleanId}, free-to-air: ${isFreeToAir}`);
 
-    // === PARTE 1: LINK STATICI VELOCI (0ms delay) ===
+    // === PARTE 1: LINK STATICI VELOCI (SEMPRE disponibili) ===
     
     // 1. Stream via staticUrl (MPD o HLS) - PRIORITÀ MASSIMA
     if (staticUrl) {
       if (isFreeToAir) {
+        // Canali free-to-air: link diretto
         streams.push({
           url: staticUrl,
-          title: `🔴 ${(channel as any).name} (🌍Block)`
+          title: `🔴 ${(channel as any).name} (🌍Direct)`
         });
-        console.log(`⚡ Fast: Added direct staticUrl`);
-      } else if (mfpUrl && mfpPsw) {
-        let proxyUrl: string;
-        if (staticUrl.includes('.mpd')) {
-          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+        console.log(`⚡ Fast: Added direct staticUrl (free-to-air)`);
+      } else {
+        // Canali a pagamento: prova prima con proxy, poi diretto
+        if (mfpUrl && mfpPsw) {
+          let proxyUrl: string;
+          if (staticUrl.includes('.mpd')) {
+            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+          } else {
+            proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+          }
+          streams.push({
+            url: proxyUrl,
+            title: `🔴 ${(channel as any).name} (MPD)`
+          });
+          console.log(`⚡ Fast: Added MFP proxy stream`);
         } else {
-          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl}`;
+          // Nessun proxy MFP: aggiungi link diretto comunque
+          streams.push({
+            url: staticUrl,
+            title: `🔴 ${(channel as any).name} (Direct)`
+          });
+          console.log(`⚡ Fast: Added direct staticUrl (no proxy)`);
         }
-        streams.push({
-          url: proxyUrl,
-          title: `🔴 ${(channel as any).name} (MPD)`
-        });
-        console.log(`⚡ Fast: Added MFP proxy stream`);
       }
     }
 
     // 2. Stream via staticUrl2 (seconda URL statica) - PRIORITÀ ALTA  
     if (staticUrl2) {
       if (isFreeToAir) {
+        // Canali free-to-air: link diretto
         streams.push({
           url: staticUrl2,
           title: `🎬 ${(channel as any).name} (HD Direct)`
         });
-        console.log(`⚡ Fast: Added direct staticUrl2`);
-      } else if (mfpUrl && mfpPsw) {
-        let proxyUrl: string;
-        if (staticUrl2.includes('.mpd')) {
-          proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+        console.log(`⚡ Fast: Added direct staticUrl2 (free-to-air)`);
+      } else {
+        // Canali a pagamento: prova prima con proxy, poi diretto
+        if (mfpUrl && mfpPsw) {
+          let proxyUrl: string;
+          if (staticUrl2.includes('.mpd')) {
+            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+          } else {
+            proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+          }
+          streams.push({
+            url: proxyUrl,
+            title: `🎬 ${(channel as any).name} (MPDhd)`
+          });
+          console.log(`⚡ Fast: Added MFP proxy stream HD`);
         } else {
-          proxyUrl = `${mfpUrl}/proxy/stream/?api_password=${encodeURIComponent(mfpPsw)}&d=${staticUrl2}`;
+          // Nessun proxy MFP: aggiungi link diretto comunque
+          streams.push({
+            url: staticUrl2,
+            title: `🎬 ${(channel as any).name} (HD Direct)`
+          });
+          console.log(`⚡ Fast: Added direct staticUrl2 (no proxy)`);
         }
-        streams.push({
-          url: proxyUrl,
-          title: `🎬 ${(channel as any).name} (MPDhd)`
-        });
-        console.log(`⚡ Fast: Added MFP proxy stream HD`);
       }
     }
 
-    // 3. Stream via staticUrlD (D di Daddy) - VELOCE se proxy disponibile
-    if (staticUrlD && tvProxyUrl) {
-      const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
-      streams.push({
-        url: daddyProxyUrl,
-        title: `📱 ${(channel as any).name} (D)`
-      });
-      console.log(`⚡ Fast: Added Daddy proxy stream`);
+    // 3. Stream via staticUrlD (D di Daddy) - SEMPRE disponibile
+    if (staticUrlD) {
+      if (tvProxyUrl) {
+        // Con proxy TV: usa proxy
+        const daddyProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(staticUrlD)}`;
+        streams.push({
+          url: daddyProxyUrl,
+          title: `📱 ${(channel as any).name} (D)`
+        });
+        console.log(`⚡ Fast: Added Daddy proxy stream`);
+      } else {
+        // Senza proxy TV: link diretto
+        streams.push({
+          url: staticUrlD,
+          title: `📱 ${(channel as any).name} (D Direct)`
+        });
+        console.log(`⚡ Fast: Added direct staticUrlD (no proxy)`);
+      }
     }
 
     // === PARTE 2: AGGIUNGI VAVOO SE È GIÀ IN CACHE, ALTRIMENTI PROVA IN BACKGROUND ===
