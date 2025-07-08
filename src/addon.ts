@@ -325,26 +325,51 @@ interface VavooCache {
 const vavooCache: VavooCache = {};
 const VAVOO_CACHE_TTL = 5 * 60 * 1000; // 5 minuti
 
-// Precarica i canali più popolari in background
-function preloadPopularVavooChannels(): void {
-  const popularChannels = [
-    'RAI 1', 'RAI 2', 'RAI 3', 'Canale 5', 'Italia 1', 'Rete 4',
-    'LA7', 'TV8', 'NOVE', 'Sky Uno', 'Sky Cinema', 'Sky Sport'
-  ];
+// Precarica TUTTI i canali Vavoo in background all'avvio
+function preloadAllVavooChannels(): void {
+  // Ottieni tutti i nomi dei canali da caricare
+  const allChannelNames: string[] = [];
   
-  console.log(`🚀 Preloading ${popularChannels.length} popular Vavoo channels in background...`);
+  // Raccogli tutti i nomi Vavoo da tutti i canali
+  tvChannels.forEach((channel: any) => {
+    if (channel.name) {
+      allChannelNames.push(channel.name);
+    }
+    if (channel.vavooNames && Array.isArray(channel.vavooNames)) {
+      allChannelNames.push(...channel.vavooNames);
+    }
+  });
   
-  popularChannels.forEach((channelName, index) => {
-    // Ritarda ogni richiesta per non sovraccaricare
+  // Rimuovi duplicati
+  const uniqueChannelNames = [...new Set(allChannelNames)];
+  
+  console.log(`🚀 Preloading ALL ${uniqueChannelNames.length} Vavoo channels in background...`);
+  console.log(`📋 This includes: ${uniqueChannelNames.slice(0, 10).join(', ')}${uniqueChannelNames.length > 10 ? '...' : ''}`);
+  
+  uniqueChannelNames.forEach((channelName, index) => {
+    // Ritarda ogni richiesta per non sovraccaricare (1 secondo tra richieste)
     setTimeout(async () => {
       try {
-        await getVavooOriginalLinkCached(channelName);
-        console.log(`📦 Preloaded Vavoo channel: ${channelName}`);
+        const result = await getVavooOriginalLinkCached(channelName);
+        if (result) {
+          console.log(`📦 ✅ Preloaded Vavoo channel: ${channelName}`);
+        } else {
+          console.log(`📦 ❌ No Vavoo link for: ${channelName}`);
+        }
       } catch (error) {
-        console.log(`⚠️ Failed to preload Vavoo channel: ${channelName}`);
+        console.log(`📦 ⚠️ Failed to preload Vavoo channel: ${channelName}`);
       }
-    }, index * 2000); // 2 secondi di ritardo tra ogni richiesta
+      
+      // Log progresso ogni 10 canali
+      if ((index + 1) % 10 === 0) {
+        console.log(`📊 Preload progress: ${index + 1}/${uniqueChannelNames.length} channels processed`);
+      }
+    }, index * 1000); // 1 secondo di ritardo tra ogni richiesta (più veloce)
   });
+  
+  // Log finale dopo che tutte le richieste sono programmate
+  const totalTime = uniqueChannelNames.length * 1000; // millisecondi
+  console.log(`⏰ All preload requests scheduled. Expected completion in ~${Math.round(totalTime / 60000)} minutes`);
 }
 
 // Funzione per ottenere il link Vavoo originale con cache
@@ -461,9 +486,9 @@ if (epgConfig.enabled) {
     }, epgConfig.updateInterval); // Usa l'intervallo configurato (6 ore)
 }
 
-// Avvia preload Vavoo per canali popolari dopo 30 secondi
+// Avvia preload Vavoo per TUTTI i canali dopo 30 secondi
 setTimeout(() => {
-    preloadPopularVavooChannels();
+    preloadAllVavooChannels();
 }, 30000);
 
 // Funzione per determinare se un canale è in chiaro (canali italiani gratuiti)
@@ -1155,6 +1180,15 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
     }
     
     console.log(`✅ Found channel: ${channel.name}`);
+    console.log(`📊 Channel debug info:`, {
+      id: cleanId,
+      name: (channel as any).name,
+      hasStaticUrl: !!(channel as any).staticUrl,
+      hasStaticUrl2: !!(channel as any).staticUrl2,
+      hasStaticUrlD: !!(channel as any).staticUrlD,
+      vavooNames: (channel as any).vavooNames,
+      category: (channel as any).category
+    });
     
     // STRATEGIA OTTIMIZZATA: Restituisci immediatamente i link statici VELOCI
     const streams: { url: string; title: string }[] = [];
@@ -1331,14 +1365,50 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       return; // Importante: esci qui dopo aver inviato la risposta
     }
 
-    // === FALLBACK: Se non ci sono link statici, prova Vavoo (più lento) ===
-    console.log(`⚠️ No static streams found, falling back to Vavoo (slower)...`);
+    // === FALLBACK: Se non ci sono link statici, prova Vavoo (più aggressivo) ===
+    console.log(`⚠️ No static streams found, falling back to Vavoo (aggressive mode)...`);
     // Usa la variabile channelName già definita sopra
     if (channelName && tvProxyUrl) {
       try {
         console.log(`🔍 Fallback: Trying to get Vavoo original link for: ${channelName}`);
-        const vavooOriginalLink = await getVavooOriginalLinkCached(channelName);
+        
+        // In fallback mode, usa timeout più lungo (10 secondi invece di 5)
+        console.log(`⏰ Using extended timeout (10s) for fallback Vavoo resolution`);
+        const vavooOriginalLink = await new Promise<string | null>((resolve) => {
+          const timeout = setTimeout(() => {
+            console.log(`⏰ Fallback: Extended Vavoo timeout (10s) for ${channelName}`);
+            resolve(null);
+          }, 10000);
+
+          const options = {
+            timeout: 10000,
+            env: {
+              ...process.env,
+              PYTHONPATH: '/Users/eschiano/Library/Python/3.9/lib/python/site-packages'
+            }
+          };
+          
+          execFile('python3', [path.join(__dirname, '../vavoo_resolver.py'), channelName, '--original-link'], options, (error: Error | null, stdout: string, stderr: string) => {
+            clearTimeout(timeout);
+            
+            if (error || !stdout || stdout.trim() === '') {
+              console.log(`❌ Fallback: Vavoo resolution failed for ${channelName}`);
+              resolve(null);
+            } else {
+              const result = stdout.trim();
+              console.log(`✅ Fallback: Vavoo found for ${channelName}: ${result}`);
+              resolve(result);
+            }
+          });
+        });
+        
         if (vavooOriginalLink) {
+          // Salva in cache anche nel fallback
+          vavooCache[channelName] = {
+            link: vavooOriginalLink,
+            timestamp: now
+          };
+          
           console.log(`✅ Fallback: Found Vavoo original link: ${vavooOriginalLink}`);
           const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
           streams.push({
@@ -1354,7 +1424,23 @@ app.get('/:config/stream/tv/:id.json', async (req: Request, res: Response) => {
       }
     }
 
-    console.log(`✅ Returning ${streams.length} streams (${streams.length > 0 ? 'with Vavoo fallback' : 'empty'}) for TV channel ${id}`);
+    // === DIAGNOSI FINALE ===
+    console.log(`📊 FINAL STREAM COUNT for ${channelName}: ${streams.length}`);
+    if (streams.length === 0) {
+      console.log(`⚠️ NO STREAMS FOUND for ${channelName}. Debug info:`);
+      console.log(`   - staticUrl: ${staticUrl ? '✅' : '❌'}`);
+      console.log(`   - staticUrl2: ${staticUrl2 ? '✅' : '❌'}`);
+      console.log(`   - staticUrlD: ${staticUrlD ? '✅' : '❌'}`);
+      console.log(`   - tvProxyUrl: ${tvProxyUrl ? '✅' : '❌'}`);
+      console.log(`   - mfpUrl: ${mfpUrl ? '✅' : '❌'}`);
+      console.log(`   - mfpPsw: ${mfpPsw ? '✅' : '❌'}`);
+      console.log(`   - isFreeToAir: ${isFreeToAir}`);
+      console.log(`   - vavooCache: ${vavooCache[channelName] ? '✅' : '❌'}`);
+    } else {
+      console.log(`✅ Streams found:`, streams.map(s => s.title));
+    }
+
+    console.log(`🎬 FINAL RESPONSE for TV channel ${id}: ${streams.length} streams`);
     res.json({ streams });
 });
 
