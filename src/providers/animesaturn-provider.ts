@@ -376,27 +376,50 @@ export class AnimeSaturnProvider {
         console.warn(`[AnimeSaturn] Nessun episodio trovato per la richiesta: S${seasonNumber}E${episodeNumber}`);
         continue;
       }
-      const streamResult = await invokePythonScraper(['get_stream', '--episode-url', targetEpisode.url]);
-      let streamUrl = streamResult.url;
-      let streamHeaders = streamResult.headers || undefined;
+
+      // NUOVA IMPLEMENTAZIONE: Ottieni tutti i link disponibili
+      const allStreamsResult = await invokePythonScraper(['get_all_streams', '--episode-url', targetEpisode.url]);
+      
+      if (!allStreamsResult || !Array.isArray(allStreamsResult) || allStreamsResult.length === 0) {
+        console.warn(`[AnimeSaturn] Nessun stream trovato per episodio: ${targetEpisode.title}`);
+        continue;
+      }
+
       const cleanName = version.title
         .replace(/\s*\(ITA\)/i, '')
         .replace(/\s*\(CR\)/i, '')
         .replace(/ITA/gi, '')
         .replace(/CR/gi, '')
         .trim();
+
       const sNum = seasonNumber || 1;
-      let streamTitle = `${capitalize(cleanName)} ${language_type} S${sNum}`;
+      let baseTitle = `${capitalize(cleanName)} ${language_type} S${sNum}`;
       if (episodeNumber) {
-        streamTitle += `E${episodeNumber}`;
+        baseTitle += `E${episodeNumber}`;
       }
-      streams.push({
-        title: streamTitle,
-        url: streamUrl,
-        behaviorHints: {
-          notWebReady: true,
-          ...(streamHeaders ? { headers: streamHeaders } : {})
+
+      // Crea uno stream per ogni link trovato
+      allStreamsResult.forEach((streamData: any, index: number) => {
+        let streamTitle = baseTitle;
+        
+        // Aggiungi informazioni sul server se ci sono più link
+        if (allStreamsResult.length > 1) {
+          streamTitle += ` - ${streamData.server || `Server ${index + 1}`}`;
         }
+        
+        // Aggiungi qualità se disponibile
+        if (streamData.quality && streamData.quality !== 'unknown') {
+          streamTitle += ` [${streamData.quality}]`;
+        }
+
+        streams.push({
+          title: streamTitle,
+          url: streamData.url,
+          behaviorHints: {
+            notWebReady: true,
+            ...(streamData.headers ? { headers: streamData.headers } : {})
+          }
+        });
       });
     }
     return { streams };
