@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AnimeSaturn MP4 Link Extractor
-Estrae il link MP4 diretto dagli episodi di animesaturn.cx
+AnimeSaturn Stream Extractor
+Estrae tutti i possibili link di streaming (MP4, M3U8, embed) dagli episodi di animesaturn.cx
 Dipendenze: requests, beautifulsoup4 (pip install requests beautifulsoup4)
 """
 
@@ -13,50 +13,40 @@ import sys
 import json
 import urllib.parse
 import argparse
-import os
+import base64
+from urllib.parse import urljoin, urlparse, parse_qs
 
-def get_domain(service):
-    config_path = os.path.join(os.path.dirname(__file__), '../../config/domains.json')
-    with open(config_path, 'r') as f:
-        domains = json.load(f)
-    return domains.get(service)
-
-BASE_URL = "https://" + get_domain("animesaturn")
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+BASE_URL = "https://www.animesaturn.cx"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 HEADERS = {"User-Agent": USER_AGENT}
 TIMEOUT = 20
 
-def safe_ascii_header(value):
-    # Remove or replace non-latin-1 characters (e.g., typographic apostrophes)
-    return value.encode('latin-1', 'ignore').decode('latin-1')
-
-def search_anime(query):
-    """Ricerca anime tramite la barra di ricerca di AnimeSaturn, con paginazione"""
+def search_anime(query, mal_id=None):
+    """
+    Ricerca anime tramite la barra di ricerca di AnimeSaturn
+    Se viene fornito un mal_id, viene utilizzato solo per scopi di logging
+    """
+    # Log per debug
+    if mal_id:
+        print(f"DEBUG: Ricerca per '{query}' con MAL ID {mal_id}", file=sys.stderr)
+    else:
+        print(f"DEBUG: Ricerca per '{query}' senza MAL ID", file=sys.stderr)
+        
+    search_url = f"{BASE_URL}/index.php?search=1&key={query.replace(' ', '+')}"
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Referer": f"{BASE_URL}/animelist?search={query.replace(' ', '+')}",
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json, text/javascript, */*; q=0.01"
+    }
+    resp = requests.get(search_url, headers=headers, timeout=TIMEOUT)
+    resp.raise_for_status()
     results = []
-    page = 1
-    while True:
-        search_url = f"{BASE_URL}/index.php?search=1&key={query.replace(' ', '+')}&page={page}"
-        referer_query = urllib.parse.quote_plus(query)
-        headers = {
-            "User-Agent": USER_AGENT,
-            "Referer": safe_ascii_header(f"{BASE_URL}/animelist?search={referer_query}"),
-            "X-Requested-With": "XMLHttpRequest",
-            "Accept": "application/json, text/javascript, */*; q=0.01"
-        }
-        resp = requests.get(search_url, headers=headers, timeout=TIMEOUT)
-        resp.raise_for_status()
-        page_results = resp.json()
-        if not page_results:
-            break
-        for item in page_results:
-            results.append({
-                "title": item["name"],
-                "url": f"{BASE_URL}/anime/{item['link']}"
-            })
-        # Se meno di 20 risultati (o la quantità che AnimeSaturn mostra per pagina), siamo all'ultima pagina
-        if len(page_results) < 20:
-            break
-        page += 1
+    for item in resp.json():
+        results.append({
+            "title": item["name"],
+            "url": f"{BASE_URL}/anime/{item['link']}"
+        })
     return results
 
 def get_watch_url(episode_url):
@@ -92,6 +82,279 @@ def extract_mp4_url(watch_url):
         if source and source.get("src"):
             return source["src"]
     return None
+    
+def search_js_variables(html_content, patterns):
+    """
+    Ricerca variabili JavaScript nel codice HTML
+    Utile per estrarre URL nascosti nei script
+    """
+    results = {}
+    for var_name, regex_pattern in patterns.items():
+        match = re.search(regex_pattern, html_content)
+        if match:
+            value = match.group(1)
+            try:
+                # Prova a decodificare valori JSON
+                results[var_name] = json.loads(value)
+            except:
+                results[var_name] = value
+    return results
+
+def get_alternative_servers(watch_url):
+    """
+    Ottiene URL dei server alternativi da una pagina
+    """
+    servers = []
+    try:
+        # Estrai il parametro file dall'URL
+        parsed_url = urlparse(watch_url)
+        params = parse_qs(parsed_url.query)
+        file_param = params.get('file', [''])[0]
+        
+        if file_param:
+            # Controlla server alternativo con parametro s=alt
+            alt_url = f"{BASE_URL}/watch?file={file_param}&s=alt"
+            servers.append(alt_url)
+            
+    except Exception as e:
+        print(f"ERROR: Impossibile ottenere server alternativi: {e}", file=sys.stderr)
+    
+    return servers
+
+def parse_base64_data(data):
+    """
+    Decodifica dati base64 che potrebbero contenere URL stream
+    """
+    if not data:
+        return None
+    
+    try:
+        decoded = base64.b64decode(data).decode('utf-8')
+        if 'http' in decoded:
+            urls = re.findall(r'https?://[^\s"\']+\.(mp4|m3u8)[^\s"\']*', decoded)
+            if urls:
+                return urls[0]
+    except:
+        pass
+    
+    return None
+
+def extract_m3u8_from_script(html_content):
+    """
+    Estrae URL m3u8 da script JavaScript nella pagina
+    """
+    m3u8_urls = []
+    # Pattern per m3u8 URLs
+    m3u8_patterns = [
+        r'file:\s*["\'](.+?\.m3u8.*?)["\']', 
+        r'source:\s*["\'](.+?\.m3u8.*?)["\']',
+        r'src:\s*["\'](.+?\.m3u8.*?)["\']',
+        r'"(.+?\.m3u8.*?)"',
+        r"'(.+?\.m3u8.*?)'"
+    ]
+    
+    for pattern in m3u8_patterns:
+        matches = re.findall(pattern, html_content)
+        for match in matches:
+            if "http" in match and match not in m3u8_urls:
+                m3u8_urls.append(match)
+    
+    return m3u8_urls
+
+def extract_all_streams(watch_url, already_visited=None):
+    """
+    Estrae tutti i possibili stream (mp4, m3u8, embed players) da una pagina di AnimeSaturn
+    Parametri:
+        watch_url: URL della pagina di streaming
+        already_visited: Set di URL già visitati (per evitare ricorsioni infinite)
+    Ritorna:
+        Una lista di dizionari con url, headers, server e qualità
+    """
+    if already_visited is None:
+        already_visited = set()
+    
+    # Evita cicli infiniti
+    if watch_url in already_visited:
+        return []
+    
+    already_visited.add(watch_url)
+    print(f"DEBUG: Esaminando URL: {watch_url}", file=sys.stderr)
+    
+    streams = []
+    try:
+        resp = requests.get(watch_url, headers=HEADERS, timeout=TIMEOUT)
+        resp.raise_for_status()
+        html_content = resp.text
+        soup = BeautifulSoup(html_content, "html.parser")
+        
+        # 1. Estrai link MP4 diretti da regex e video tags
+        mp4_urls = re.findall(r'https?://[\w\.-]+/[^"\']+\.mp4[^"\']*', html_content)
+        
+        for mp4_url in mp4_urls:
+            if not any(s['url'] == mp4_url for s in streams):
+                streams.append({
+                    "url": mp4_url,
+                    "server": "Direct MP4",
+                    "quality": "HD",
+                    "headers": {
+                        "Referer": watch_url,
+                        "User-Agent": USER_AGENT
+                    }
+                })
+        
+        # 2. Controlla video tag e source tags
+        video_tags = soup.find_all("video")
+        for video in video_tags:
+            sources = video.find_all("source", src=True)
+            for source in sources:
+                src = source["src"]
+                if not any(s['url'] == src for s in streams):
+                    quality = source.get("label", "HD") or source.get("res", "HD") or "HD"
+                    file_type = "MP4" if ".mp4" in src else "HLS" if ".m3u8" in src else "Stream"
+                    streams.append({
+                        "url": src,
+                        "server": f"Direct {file_type}",
+                        "quality": quality,
+                        "headers": {
+                            "Referer": watch_url,
+                            "User-Agent": USER_AGENT
+                        }
+                    })
+        
+        # 3. Estrai link m3u8 da script
+        m3u8_urls = extract_m3u8_from_script(html_content)
+        for m3u8_url in m3u8_urls:
+            if not any(s['url'] == m3u8_url for s in streams):
+                streams.append({
+                    "url": m3u8_url,
+                    "server": "HLS Stream",
+                    "quality": "Auto",
+                    "headers": {
+                        "Referer": watch_url,
+                        "User-Agent": USER_AGENT
+                    }
+                })
+        
+        # 4. Controlla script per dati JSON o variabili
+        js_vars = search_js_variables(html_content, {
+            "playerSource": r'file:\s*[\'"]([^"\']+)[\'"]',
+            "videoSrc": r'source\s*:\s*[\'"]([^"\']+)[\'"]',
+            "videoUrl": r'url\s*:\s*[\'"]([^"\']+)[\'"]',
+            "playerData": r'player_data\s*=\s*([^;]+)',
+            "base64Data": r'atob\([\'"]([^\'"]+)[\'"]\)'
+        })
+        
+        for var_name, value in js_vars.items():
+            if isinstance(value, str) and ("http" in value and (".mp4" in value or ".m3u8" in value)):
+                if not any(s['url'] == value for s in streams):
+                    streams.append({
+                        "url": value,
+                        "server": f"JavaScript {var_name}",
+                        "quality": "unknown",
+                        "headers": {
+                            "Referer": watch_url,
+                            "User-Agent": USER_AGENT
+                        }
+                    })
+        
+        # 5. Estrai dati base64 e cerca URL
+        base64_matches = re.findall(r'atob\([\'"]([^\'"]+)[\'"]\)', html_content)
+        for b64 in base64_matches:
+            url = parse_base64_data(b64)
+            if url and not any(s['url'] == url for s in streams):
+                streams.append({
+                    "url": url,
+                    "server": "Base64 Decoded",
+                    "quality": "unknown",
+                    "headers": {
+                        "Referer": watch_url,
+                        "User-Agent": USER_AGENT
+                    }
+                })
+        
+        # 6. Cerca iframe player
+        iframes = soup.find_all("iframe", src=True)
+        for i, iframe in enumerate(iframes):
+            src = iframe.get("src")
+            # Skip ads
+            if src and not ("ad." in src or "ads." in src or "banner" in src or "promo" in src):
+                # Make URL absolute
+                if src.startswith("//"):
+                    src = "https:" + src
+                elif src.startswith("/"):
+                    src = BASE_URL + src
+                
+                # Identify server
+                server_name = "Server Embed"
+                if "animeplayx" in src:
+                    server_name = "AnimePlyx"
+                elif "filemoon" in src:
+                    server_name = "FileMoon"
+                elif "doodstream" in src or "dood." in src:
+                    server_name = "DoodStream"
+                elif "playerme" in src:
+                    server_name = "AnimePlayerMe"
+                elif "stream" in src:
+                    server_name = f"Stream {i+1}"
+                else:
+                    server_name = f"Server {i+1}"
+                
+                if not any(s['url'] == src for s in streams):
+                    streams.append({
+                        "url": src,
+                        "server": server_name,
+                        "quality": "unknown",
+                        "headers": {
+                            "Referer": watch_url,
+                            "User-Agent": USER_AGENT
+                        }
+                    })
+        
+        # 7. Cerca link player nei link
+        all_links = soup.find_all("a", href=True)
+        for link in all_links:
+            href = link.get("href")
+            if href and ("watch?file=" in href or "/play/" in href or "/video/" in href):
+                # Make sure URL is absolute
+                if href.startswith("//"):
+                    href = "https:" + href
+                elif href.startswith("/"):
+                    href = BASE_URL + href
+                
+                if not any(s['url'] == href for s in streams):
+                    streams.append({
+                        "url": href,
+                        "server": "Link Player",
+                        "quality": "unknown",
+                        "headers": {
+                            "Referer": watch_url,
+                            "User-Agent": USER_AGENT
+                        }
+                    })
+        
+        # 8. Cerca server alternativi
+        alt_servers = get_alternative_servers(watch_url)
+        for alt_url in alt_servers:
+            if alt_url not in already_visited:
+                print(f"DEBUG: Controllando server alternativo: {alt_url}", file=sys.stderr)
+                alt_streams = extract_all_streams(alt_url, already_visited)
+                
+                # Aggiungi solo stream che non sono già presenti
+                for alt_stream in alt_streams:
+                    if not any(s['url'] == alt_stream['url'] for s in streams):
+                        # Marca come server alternativo
+                        alt_stream['server'] = f"Alt: {alt_stream['server']}"
+                        streams.append(alt_stream)
+        
+    except Exception as e:
+        print(f"ERROR: Errore durante l'estrazione degli stream: {e}", file=sys.stderr)
+    
+    # Debug log
+    print(f"DEBUG: Trovati {len(streams)} stream per URL: {watch_url}", file=sys.stderr)
+    for i, s in enumerate(streams):
+        print(f"DEBUG: Stream {i+1}: {s['server']} - {s['url']}", file=sys.stderr)
+                
+    return streams
 
 def get_episodes_list(anime_url):
     resp = requests.get(anime_url, headers=HEADERS, timeout=TIMEOUT)
@@ -124,158 +387,6 @@ def download_mp4(mp4_url, referer_url, filename=None):
             if chunk:
                 f.write(chunk)
     print(f"✅ Download completato: {filename}\n")
-
-def search_anime_html(query, max_pages=3):
-    """Ricerca anime tramite la pagina HTML di AnimeSaturn, con paginazione solo se necessario"""
-    results = []
-    page = 1
-    while page <= max_pages:
-        url = f'{BASE_URL}/animelist?search={urllib.parse.quote_plus(query)}&page={page}'
-        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        # Seleziona solo i link principali ai dettagli anime
-        for a in soup.select('div.item-archivio h3 a[href^="/anime/"], div.item-archivio h3 a[href^="https://www.animesaturn.cx/anime/"]'):
-            title = a.get_text(strip=True)
-            href = a['href']
-            if not href.startswith('http'):
-                href = BASE_URL + href
-            if not any(r['url'] == href for r in results):
-                results.append({'title': title, 'url': href, 'page': page})
-                print(f"[DEBUG] Trovato titolo: {title} (url: {href})", file=sys.stderr)
-        pagination = soup.select_one('ul.pagination')
-        next_btn = soup.select_one('li.page-item.next:not(.disabled)')
-        if not (pagination and next_btn):
-            break
-        page += 1
-    return results
-
-def search_anime_by_title_or_malid(title, mal_id):
-    print(f"[DEBUG] INIZIO: title={title}, mal_id={mal_id}", file=sys.stderr)
-
-    # Helper function to check a list of results for a MAL ID match
-    def check_results_for_mal_id(results_list, target_mal_id, search_step_name):
-        if not results_list:
-            print(f"[DEBUG] {search_step_name}: Nessun risultato da controllare.", file=sys.stderr)
-            return None
-        
-        print(f"[DEBUG] {search_step_name}: Controllo {len(results_list)} risultati...", file=sys.stderr)
-        matched_items = []
-        for item in results_list:
-            try:
-                resp = requests.get(item["url"], headers=HEADERS, timeout=TIMEOUT)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "html.parser")
-                mal_btn = soup.find("a", href=re.compile(r"myanimelist\.net/anime/(\d+)"))
-                if mal_btn:
-                    found_id_match = re.search(r"myanimelist\.net/anime/(\d+)", mal_btn["href"])
-                    if found_id_match:
-                        found_id = found_id_match.group(1)
-                        print(f"[DEBUG] -> Controllo '{item['title']}': trovato MAL ID {found_id} (cerco {target_mal_id})", file=sys.stderr)
-                        if found_id == str(target_mal_id):
-                            print(f"[DEBUG] MATCH TROVATO!", file=sys.stderr)
-                            matched_items.append(item)
-            except Exception as e:
-                print(f"[DEBUG] Errore visitando '{item['title']}': {e}", file=sys.stderr)
-        if matched_items:
-            return matched_items
-        print(f"[DEBUG] {search_step_name}: Nessun match trovato.", file=sys.stderr)
-        return None  # No match in this batch
-
-    # --- Fallback Chain ---
-
-    # 1. Ricerca diretta per titolo completo
-    direct_results = search_anime(title)
-    matches = check_results_for_mal_id(direct_results, mal_id, "Step 1: Ricerca Diretta") or []
-    print(f"[DEBUG] matches dopo ricerca diretta: {matches}", file=sys.stderr)
-
-    # 2. Fallback: Titolo troncato all'apostrofo
-    if not matches and ("'" in title or "’" in title or "‘" in title):
-        last_apos = max(title.rfind(c) for c in ["'", "’", "‘"])
-        if last_apos != -1:
-            truncated_title = title[:last_apos].strip()
-            print(f"[DEBUG] Titolo troncato per Fallback #1: '{truncated_title}'", file=sys.stderr)
-            truncated_results = search_anime(truncated_title)
-            matches += check_results_for_mal_id(truncated_results, mal_id, "Step 2: Ricerca Titolo Troncato") or []
-    print(f"[DEBUG] matches dopo troncato: {matches}", file=sys.stderr)
-
-    # 3. Fallback finale: Ricerca fuzzy con prime 3 lettere
-    if not matches:
-        print(f"[DEBUG] PRIMA DELLA FUZZY: matches={matches}", file=sys.stderr)
-        short_key = title[:3]
-        print(f"[DEBUG] Avvio fallback fuzzy: chiave '{short_key}'", file=sys.stderr)
-        # Usa la ricerca HTML per la fuzzy search
-        fuzzy_results = search_anime_html(short_key)
-        print(f"[DEBUG] Fuzzy search ha trovato {len(fuzzy_results)} risultati", file=sys.stderr)
-        # Evita duplicati
-        urls_to_skip = {r['url'] for r in (direct_results or [])}
-        unique_fuzzy_results = [r for r in fuzzy_results if r['url'] not in urls_to_skip]
-        fuzzy_matches = []
-        found_normal = None
-        found_ita = None
-        found_cr = None
-        found_count = 0
-        for item in unique_fuzzy_results:
-            try:
-                print(f"[DEBUG] Visito URL: {item['url']}", file=sys.stderr)
-                resp = requests.get(item["url"], headers=HEADERS, timeout=TIMEOUT)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "html.parser")
-                mal_btn = soup.find("a", href=re.compile(r"myanimelist\.net/anime/(\d+)"))
-                if mal_btn:
-                    found_id_match = re.search(r"myanimelist\.net/anime/(\d+)", mal_btn["href"])
-                    if found_id_match:
-                        found_id = found_id_match.group(1)
-                        print(f"[DEBUG] -> Controllo '{item['title']}': trovato MAL ID {found_id} (cerco {mal_id})", file=sys.stderr)
-                        if found_id == str(mal_id):
-                            print(f"[DEBUG] MATCH TROVATO!", file=sys.stderr)
-                            t_upper = item['title'].upper()
-                            if not found_normal and '(ITA' not in t_upper and '(CR' not in t_upper:
-                                found_normal = item
-                                found_count += 1
-                            elif not found_ita and '(ITA' in t_upper:
-                                found_ita = item
-                                found_count += 1
-                            elif not found_cr and '(CR' in t_upper:
-                                found_cr = item
-                            # Se hai trovato normal e ita, continua a cercare CR fino a fine terza pagina
-                            if found_normal and found_ita and found_cr:
-                                break
-            except Exception as e:
-                print(f"[DEBUG] Errore visitando '{item['title']}': {e}", file=sys.stderr)
-            # Se hai già trovato normal e ita e sei oltre la terza pagina, esci
-            if item.get('page', 1) >= 3 and found_normal and found_ita:
-                break
-        # Aggiungi le versioni trovate
-        if found_normal:
-            fuzzy_matches.append(found_normal)
-        if found_ita:
-            fuzzy_matches.append(found_ita)
-        if found_cr:
-            fuzzy_matches.append(found_cr)
-        print(f"[DEBUG] fuzzy_matches trovati: {fuzzy_matches}", file=sys.stderr)
-        if fuzzy_matches and len(fuzzy_matches) >= 2:
-            seen = set()
-            deduped = []
-            for m in fuzzy_matches:
-                if m['url'] not in seen:
-                    deduped.append(m)
-                    seen.add(m['url'])
-            return deduped
-        matches += fuzzy_matches
-    print(f"[DEBUG] matches finali: {matches}", file=sys.stderr)
-
-    if matches:
-        # Deduplica per url
-        seen = set()
-        deduped = []
-        for m in matches:
-            if m['url'] not in seen:
-                deduped.append(m)
-                seen.add(m['url'])
-        return deduped
-
-    print(f"[DEBUG] NESSUN MATCH TROVATO dopo tutti i tentativi.", file=sys.stderr)
-    return []
 
 def main():
     print("🎬 === AnimeSaturn MP4 Link Extractor === 🎬")
@@ -359,7 +470,7 @@ def main_cli():
     # Search command
     search_parser = subparsers.add_parser("search", help="Search for an anime")
     search_parser.add_argument("--query", required=True, help="Anime title to search for")
-    search_parser.add_argument("--mal-id", required=False, help="MAL ID to match in fallback search")
+    search_parser.add_argument("--mal-id", help="Optional MyAnimeList ID for better matching")
 
     # Get episodes command
     episodes_parser = subparsers.add_parser("get_episodes", help="Get episode list for an anime")
@@ -368,14 +479,15 @@ def main_cli():
     # Get stream command
     stream_parser = subparsers.add_parser("get_stream", help="Get stream URL for an episode")
     stream_parser.add_argument("--episode-url", required=True, help="AnimeSaturn episode URL")
+    
+    # Get all streams command (new)
+    all_streams_parser = subparsers.add_parser("get_all_streams", help="Get all available stream URLs for an episode")
+    all_streams_parser.add_argument("--episode-url", required=True, help="AnimeSaturn episode URL")
 
     args = parser.parse_args()
 
     if args.command == "search":
-        if getattr(args, "mal_id", None):
-            results = search_anime_by_title_or_malid(args.query, args.mal_id)
-        else:
-            results = search_anime(args.query)
+        results = search_anime(args.query, args.mal_id)
         print(json.dumps(results, indent=2))
     elif args.command == "get_episodes":
         results = get_episodes_list(args.anime_url)
@@ -394,6 +506,13 @@ def main_cli():
             }
         # Test: se vuoi solo il link mp4, restituisci {"url": mp4_url}
         print(json.dumps(stremio_stream if stremio_stream else {"url": mp4_url}, indent=2))
+    elif args.command == "get_all_streams":
+        watch_url = get_watch_url(args.episode_url)
+        if not watch_url:
+            print(json.dumps([], indent=2))
+            return
+        all_streams = extract_all_streams(watch_url)
+        print(json.dumps(all_streams, indent=2))
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
