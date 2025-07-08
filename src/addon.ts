@@ -648,7 +648,11 @@ function createBuilder(config: AddonConfig = {}) {
           const channelWithPrefix = {
             ...channel,
             id: `tv:${channel.id}`, // Aggiungi prefisso tv:
-            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
+            posterShape: "landscape", // Imposta forma poster orizzontale per canali TV
+            // Assicurati che poster e logo siano correttamente inclusi anche nel catalogo
+            poster: (channel as any).poster || (channel as any).logo || '',
+            logo: (channel as any).logo || (channel as any).poster || '',
+            background: (channel as any).background || (channel as any).poster || ''
           };
           
           // === AGGIUNGI EPG ANCHE NEL CATALOGO ===
@@ -709,7 +713,32 @@ function createBuilder(config: AddonConfig = {}) {
             const metaWithPrefix = {
               ...channel,
               id: `tv:${channel.id}`,
-              posterShape: "landscape"
+              posterShape: "landscape",
+              // Assicurati che poster e logo siano correttamente inclusi
+              poster: (channel as any).poster || (channel as any).logo || '',
+              logo: (channel as any).logo || (channel as any).poster || '',
+              // Aggiungi anche background se disponibile
+              background: (channel as any).background || (channel as any).poster || '',
+              // Metadati aggiuntivi per migliorare la visualizzazione
+              genre: [(channel as any).category || 'general'],
+              genres: [(channel as any).category || 'general'],
+              year: new Date().getFullYear().toString(),
+              imdbRating: null,
+              // Aggiungi video/trailer se disponibile
+              videos: (channel as any).trailer ? [{
+                id: `${channel.id}_trailer`,
+                title: `${channel.name} - Anteprima`,
+                published: new Date().toISOString(),
+                thumbnail: (channel as any).poster || '',
+                stream: {
+                  url: (channel as any).trailer
+                }
+              }] : [],
+              // Tipo di contenuto
+              releaseInfo: "Live TV",
+              // Linguaggio
+              country: "IT",
+              language: "it"
             };
             
             // EPG logic - SEMPRE INCLUDI EPG NEL META
@@ -1507,11 +1536,15 @@ app.get('/:config/catalog/:type/:id.json', (req: Request, res: Response) => {
             console.log(`📺 No genre filter, showing all ${tvChannels.length} channels`);
         }
         
-        // Aggiungi prefisso tv: agli ID e posterShape landscape
+        // Aggiungi prefisso tv: agli ID, posterShape landscape e immagini
         const tvChannelsWithPrefix = filteredChannels.map((channel: any) => ({
             ...channel,
             id: `tv:${channel.id}`, // Aggiungi prefisso tv:
-            posterShape: "landscape" // Imposta forma poster orizzontale per canali TV
+            posterShape: "landscape", // Imposta forma poster orizzontale per canali TV
+            // Assicurati che poster e logo siano correttamente inclusi
+            poster: (channel as any).poster || (channel as any).logo || '',
+            logo: (channel as any).logo || (channel as any).poster || '',
+            background: (channel as any).background || (channel as any).poster || ''
         }));
         console.log(`✅ Returning ${tvChannelsWithPrefix.length} TV channels for catalog ${id} with prefixed IDs`);
         res.json({ metas: tvChannelsWithPrefix });
