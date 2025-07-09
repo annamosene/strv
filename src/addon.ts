@@ -999,29 +999,38 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         const baseName = (channel as any).name.replace(/\s*(\(\d+\)|\d+)$/, '').trim();
                         const links: string[] = [];
                         // 1. Lista multipla (preferita)
-                        const baseLinks = vavooCache.links.get(baseName);
-                        if (Array.isArray(baseLinks)) {
-                            links.push(...baseLinks);
+                        const baseLinksRaw = vavooCache.links.get(baseName);
+                        if (Array.isArray(baseLinksRaw)) {
+                            links.push(...baseLinksRaw);
+                        } else if (typeof baseLinksRaw === 'string') {
+                            links.push(baseLinksRaw);
                         }
                         // 2. Chiave esatta (singolo)
-                        const exactLink = vavooCache.links.get((channel as any).name);
-                        if (typeof exactLink === 'string' && !links.includes(exactLink)) {
-                            links.push(exactLink);
+                        const exactLinkRaw = vavooCache.links.get((channel as any).name);
+                        if (Array.isArray(exactLinkRaw)) {
+                            for (const l of exactLinkRaw) if (!links.includes(l)) links.push(l);
+                        } else if (typeof exactLinkRaw === 'string' && !links.includes(exactLinkRaw)) {
+                            links.push(exactLinkRaw);
                         }
                         // 3. Variante (2)
-                        const variant2 = vavooCache.links.get(`${baseName} (2)`);
-                        if (typeof variant2 === 'string' && !links.includes(variant2)) {
-                            links.push(variant2);
+                        const variant2Raw = vavooCache.links.get(`${baseName} (2)`);
+                        if (Array.isArray(variant2Raw)) {
+                            for (const l of variant2Raw) if (!links.includes(l)) links.push(l);
+                        } else if (typeof variant2Raw === 'string' && !links.includes(variant2Raw)) {
+                            links.push(variant2Raw);
                         }
                         // 4. Variante 2
-                        const variantNum = vavooCache.links.get(`${baseName} 2`);
-                        if (typeof variantNum === 'string' && !links.includes(variantNum)) {
-                            links.push(variantNum);
+                        const variantNumRaw = vavooCache.links.get(`${baseName} 2`);
+                        if (Array.isArray(variantNumRaw)) {
+                            for (const l of variantNumRaw) if (!links.includes(l)) links.push(l);
+                        } else if (typeof variantNumRaw === 'string' && !links.includes(variantNumRaw)) {
+                            links.push(variantNumRaw);
                         }
                         // Aggiungi tutti i link trovati come stream separati
                         links.forEach((vavooOriginalLink, idx) => {
+                            if (typeof vavooOriginalLink !== 'string') return;
                             if (tvProxyUrl) {
-                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent((vavooOriginalLink || ''))}`;
+                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
                                 streams.push({
                                     url: vavooProxyUrl,
                                     title: idx === 0 ? `[✌️V] ${channel.name}` : `[✌️V-${idx+1}] ${channel.name}`
@@ -1029,7 +1038,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                                 debugLog(`Aggiunto Vavoo Proxy (TV): ${vavooProxyUrl}`);
                             } else {
                                 streams.push({
-                                    url: vavooOriginalLink || '',
+                                    url: vavooOriginalLink,
                                     title: idx === 0 ? `[❌Proxy][✌️V] ${channel.name}` : `[❌Proxy][✌️V-${idx+1}] ${channel.name}`
                                 });
                                 debugLog(`Aggiunto Vavoo Direct: ${vavooOriginalLink}`);
