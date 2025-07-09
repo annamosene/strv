@@ -955,42 +955,44 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                             url: (channel as any).staticUrlF,
                             title: `[🌍dTV] ${channel.name}`
                         });
+                        debugLog(`Aggiunto staticUrlF Direct: ${(channel as any).staticUrlF}`);
                     }
 
-                    // 2. staticUrl, staticUrl2, staticUrlD, Vavoo: solo Proxy se proxy presente, solo Direct se proxy assente
                     const hasProxy = !!(mfpUrl && mfpPsw);
                     const hasTvProxy = !!(tvProxyUrl && !tvProxyUrl.includes('192.168') && !tvProxyUrl.includes('localhost'));
 
                     // staticUrl
                     if ((channel as any).staticUrl) {
                         if (hasProxy) {
-                            let proxyUrl: string;
-                            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl)}`;
+                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl)}`;
                             streams.push({
                                 url: proxyUrl,
                                 title: `[📺HD] ${channel.name}`
                             });
+                            debugLog(`Aggiunto staticUrl Proxy: ${proxyUrl}`);
                         } else {
                             streams.push({
                                 url: (channel as any).staticUrl,
                                 title: `[❌Proxy][📺HD] ${channel.name}`
                             });
+                            debugLog(`Aggiunto staticUrl Direct: ${(channel as any).staticUrl}`);
                         }
                     }
                     // staticUrl2
                     if ((channel as any).staticUrl2) {
                         if (hasProxy) {
-                            let proxyUrl: string;
-                            proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl2)}`;
+                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl2)}`;
                             streams.push({
                                 url: proxyUrl,
                                 title: `[📽️FHD] ${channel.name}`
                             });
+                            debugLog(`Aggiunto staticUrl2 Proxy: ${proxyUrl}`);
                         } else {
                             streams.push({
                                 url: (channel as any).staticUrl2,
                                 title: `[❌Proxy][📽️FHD] ${channel.name}`
                             });
+                            debugLog(`Aggiunto staticUrl2 Direct: ${(channel as any).staticUrl2}`);
                         }
                     }
                     // staticUrlD
@@ -1001,11 +1003,13 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                                 url: daddyProxyUrl,
                                 title: `[🌐D] ${channel.name}`
                             });
-                        } else if (!(hasProxy)) {
+                            debugLog(`Aggiunto staticUrlD Proxy: ${daddyProxyUrl}`);
+                        } else if (!hasProxy) {
                             streams.push({
                                 url: (channel as any).staticUrlD,
                                 title: `[❌Proxy][🌐D] ${channel.name}`
                             });
+                            debugLog(`Aggiunto staticUrlD Direct: ${(channel as any).staticUrlD}`);
                         }
                     }
                     // Vavoo
@@ -1017,11 +1021,13 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                                 url: vavooProxyUrl,
                                 title: `[✌️V] ${channel.name}`
                             });
-                        } else if (!(hasProxy)) {
+                            debugLog(`Aggiunto Vavoo Proxy: ${vavooProxyUrl}`);
+                        } else if (!hasProxy) {
                             streams.push({
                                 url: vavooOriginalLink || '',
                                 title: `[❌Proxy][✌️V] ${channel.name}`
                             });
+                            debugLog(`Aggiunto Vavoo Direct: ${vavooOriginalLink}`);
                         }
                     }
 
