@@ -1026,17 +1026,40 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         const variantNum = `${baseName} 2`;
                         console.log('🔧 [VAVOO] DEBUG - variant2:', variant2);
                         console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
-                        // --- VAVOO: cerca tutte le varianti .<lettera> per ogni nome in vavooNames (case-insensitive) ---
+                        // --- VAVOO: cerca tutte le varianti .<lettera> per ogni nome in vavooNames (case-insensitive), sia originale che normalizzato ---
                         const vavooNamesArr = (channel as any).vavooNames || [channel.name];
+                        console.log(`[VAVOO] CERCA: vavooNamesArr =`, vavooNamesArr);
+                        const allCacheKeys = Array.from(vavooCache.links.keys());
+                        console.log(`[VAVOO] CACHE KEYS:`, allCacheKeys);
                         const foundVavooLinks: { url: string, key: string }[] = [];
                         for (const vavooName of vavooNamesArr) {
-                            // Cerca tutte le chiavi che corrispondono a 'NOME .<lettera>' (case-insensitive)
+                            // Cerca con nome originale
+                            console.log(`[VAVOO] CERCA (original): '${vavooName} .<lettera>'`);
                             const variantRegex = new RegExp(`^${vavooName} \.([a-zA-Z])$`, 'i');
                             for (const [key, value] of vavooCache.links.entries()) {
                                 if (variantRegex.test(key)) {
+                                    console.log(`[VAVOO] MATCH (original): chiave trovata '${key}' per vavooName '${vavooName}'`);
                                     const links = Array.isArray(value) ? value : [value];
                                     for (const url of links) {
                                         foundVavooLinks.push({ url, key });
+                                        console.log(`[VAVOO] LINK trovato (original): ${url} (chiave: ${key})`);
+                                    }
+                                }
+                            }
+                            // Cerca anche con nome normalizzato (ma solo se diverso)
+                            const vavooNameNorm = vavooName.toUpperCase().replace(/\s+/g, ' ').trim();
+                            if (vavooNameNorm !== vavooName) {
+                                console.log(`[VAVOO] CERCA (normalizzato): '${vavooNameNorm} .<lettera>'`);
+                                const variantRegexNorm = new RegExp(`^${vavooNameNorm} \.([a-zA-Z])$`, 'i');
+                                for (const [key, value] of vavooCache.links.entries()) {
+                                    const keyNorm = key.toUpperCase().replace(/\s+/g, ' ').trim();
+                                    if (variantRegexNorm.test(keyNorm)) {
+                                        console.log(`[VAVOO] MATCH (normalizzato): chiave trovata '${key}' per vavooNameNorm '${vavooNameNorm}'`);
+                                        const links = Array.isArray(value) ? value : [value];
+                                        for (const url of links) {
+                                            foundVavooLinks.push({ url, key });
+                                            console.log(`[VAVOO] LINK trovato (normalizzato): ${url} (chiave: ${key})`);
+                                        }
                                     }
                                 }
                             }
@@ -1058,6 +1081,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                                     });
                                 }
                             });
+                            console.log(`[VAVOO] RISULTATO: trovati ${foundVavooLinks.length} link, stream generati:`, streams.map(s => s.title));
                         } else {
                             // fallback: chiave esatta
                             const exact = vavooCache.links.get(channel.name);
@@ -1078,6 +1102,9 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                                         });
                                     }
                                 });
+                                console.log(`[VAVOO] RISULTATO: fallback chiave esatta, trovati ${links.length} link, stream generati:`, streams.map(s => s.title));
+                            } else {
+                                console.log(`[VAVOO] RISULTATO: nessun link trovato per questo canale.`);
                             }
                         }
                     }
