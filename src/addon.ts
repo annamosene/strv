@@ -632,9 +632,15 @@ function resolveVavooChannelByName(channelName: string): Promise<string | null> 
         
         // Cerca il canale nella cache
         if (channelName && vavooCache.links.has(channelName)) {
-            const cachedUrl = vavooCache.links.get(channelName);
-            console.log(`[Vavoo] Trovato in cache: ${channelName} -> ${cachedUrl?.substring(0, 50)}...`);
-            return resolve(cachedUrl || null);
+            const cachedUrlRaw = vavooCache.links.get(channelName);
+            let cachedUrl: string | null = null;
+            if (Array.isArray(cachedUrlRaw)) {
+                cachedUrl = cachedUrlRaw[0] || null;
+            } else if (typeof cachedUrlRaw === 'string') {
+                cachedUrl = cachedUrlRaw;
+            }
+            console.log(`[Vavoo] Trovato in cache: ${channelName} -> ${cachedUrl ? cachedUrl.substring(0, 50) : 'null'}...`);
+            return resolve(cachedUrl);
         }
         
         // Se non è nella cache ma la cache è stata inizializzata
