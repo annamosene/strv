@@ -1,8 +1,9 @@
 import { ContentType } from "stremio-addon-sdk";
 import * as cheerio from "cheerio";
-
-// --- Configuration for VixCloud ---
-const VIXCLOUD_SITE_ORIGIN = "https://vixsrc.to"; // e.g., "https://vixcloud.co"
+import * as fs from 'fs';
+import * as path from 'path';
+const domains = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/domains.json'), 'utf-8'));
+const VIXCLOUD_SITE_ORIGIN = `https://${domains.vixsrc}`; // e.g., "https://vixcloud.co"
 const VIXCLOUD_REQUEST_TITLE_PATH = "/richiedi-un-titolo"; // Path used to fetch site version
 const VIXCLOUD_EMBED_BASE_PATH = "/embed"; // Base path for embed URLs, e.g., /embed/movie/tt12345
 // --- TMDB Configuration ---
