@@ -325,17 +325,6 @@ def main():
         }
         print("\n🔗 Oggetto stream per Stremio:")
         print(json.dumps(stremio_stream, indent=2))
-        # Link proxy universale
-        proxy_base = "https://mfpi.pizzapi.uk/proxy/stream/"
-        filename = mp4_url.split("/")[-1].split("?")[0]
-        proxy_url = (
-            f"{proxy_base}{urllib.parse.quote(filename)}?d={urllib.parse.quote(mp4_url)}"
-            f"&api_password=mfp"
-            f"&h_user-agent={urllib.parse.quote(USER_AGENT)}"
-            f"&h_referer={urllib.parse.quote(watch_url)}"
-        )
-        print("\n🔗 Link proxy universale (VLC/Stremio/Browser):")
-        print(proxy_url)
         # Download automatico (opzionale)
         # download_mp4(mp4_url, watch_url)
     else:
