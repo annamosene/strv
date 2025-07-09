@@ -905,6 +905,12 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                 
                 const allStreams: Stream[] = [];
                 
+                // Prima della logica degli stream TV, aggiungi:
+                let mfpUrl = config.mfpProxyUrl ? normalizeProxyUrl(config.mfpProxyUrl) :
+                             (config.mediaFlowProxyUrl ? normalizeProxyUrl(config.mediaFlowProxyUrl) : '');
+                let mfpPsw = config.mfpProxyPassword || config.mediaFlowProxyPassword || '';
+                let tvProxyUrl = config.tvProxyUrl ? normalizeProxyUrl(config.tvProxyUrl) : '';
+
                 // === LOGICA TV ===
                 if (type === "tv") {
                     // Improved channel ID parsing to handle different formats from Stremio
