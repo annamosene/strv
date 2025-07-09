@@ -304,6 +304,18 @@ const vavooCache: VavooCache = {
 // Path del file di cache per Vavoo
 const vavaoCachePath = path.join(__dirname, '../cache/vavoo_cache.json');
 
+// Se la cache non esiste, genera automaticamente
+if (!fs.existsSync(vavaoCachePath)) {
+    console.warn('⚠️ [VAVOO] Cache non trovata, provo a generarla automaticamente...');
+    try {
+        const { execSync } = require('child_process');
+        execSync('python3 vavoo_resolver.py --build-cache', { cwd: path.join(__dirname, '..') });
+        console.log('✅ [VAVOO] Cache generata automaticamente!');
+    } catch (err) {
+        console.error('❌ [VAVOO] Errore nella generazione automatica della cache:', err);
+    }
+}
+
 // Funzione per caricare la cache Vavoo dal file
 function loadVavooCache(): void {
     try {
@@ -312,6 +324,8 @@ function loadVavooCache(): void {
             vavooCache.timestamp = cacheData.timestamp || 0;
             vavooCache.links = new Map(Object.entries(cacheData.links || {}));
             console.log(`📺 Vavoo cache caricata con ${vavooCache.links.size} canali, aggiornata il: ${new Date(vavooCache.timestamp).toLocaleString()}`);
+            console.log('🔧 [VAVOO] DEBUG - Cache caricata all\'avvio:', vavooCache.links.size, 'canali');
+            console.log('🔧 [VAVOO] DEBUG - Path cache:', vavaoCachePath);
         } else {
             console.log(`📺 File cache Vavoo non trovato, verrà creato al primo aggiornamento`);
         }
