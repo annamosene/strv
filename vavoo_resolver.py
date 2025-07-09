@@ -238,6 +238,15 @@ def build_vavoo_cache(channels):
         cache[base_name].append(url)
     return cache
 
+def mostra_debug_cache():
+    import json
+    try:
+        with open('vavoo_cache.json', encoding='utf-8') as f:
+            cache = json.load(f)
+        return json.dumps(cache, indent=2, ensure_ascii=False)
+    except Exception as e:
+        return f"Errore nella lettura della cache: {e}"
+
 # Esegui con: python3 vavoo_resolver.py --build-cache
 if "--build-cache" in sys.argv:
     channels = get_channels()
