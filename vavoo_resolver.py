@@ -219,6 +219,31 @@ def resolve_direct_link(link):
         print(f"[DEBUG] Error in direct resolution: {e}", file=sys.stderr)
         return None
 
+def build_vavoo_cache(channels):
+    cache = {}
+    for ch in channels:
+        name = ch.get("name", "").strip()
+        url = ch.get("url", "")
+        if not name or not url:
+            continue
+        # Salva la chiave esatta
+        cache[name] = url
+        # Salva anche la chiave base per lookup multiplo
+        base_name = re.sub(r'\s*(\(\d+\)|\d+)$', '', name).strip()
+        if base_name not in cache or not isinstance(cache[base_name], list):
+            cache[base_name] = []
+        cache[base_name].append(url)
+    return cache
+
+# Esegui con: python3 vavoo_resolver.py --build-cache
+if "--build-cache" in sys.argv:
+    channels = get_channels()
+    cache = build_vavoo_cache(channels)
+    with open("vavoo_cache.json", "w", encoding="utf-8") as f:
+        json.dump({"links": cache}, f, ensure_ascii=False, indent=2)
+    print("Cache Vavoo generata con successo!")
+    sys.exit(0)
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
