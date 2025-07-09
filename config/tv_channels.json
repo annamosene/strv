@@ -6,7 +6,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai1.png",
     "description": "Rai 1 - Canale pubblico italiano",
     "category": "rai",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI 1"
     ],
@@ -21,7 +21,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai2.png",
     "description": "Rai 2 - Canale pubblico italiano",
     "category": "rai",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI 2"
     ],
@@ -36,7 +36,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai3.png",
     "description": "Rai 3 - Canale pubblico italiano",
     "category": "rai",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI 3"
     ],
@@ -51,7 +51,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rete4.png",
     "description": "Rete 4 - Mediaset",
     "category": "mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8",
     "vavooNames": [
       "RETE 4"
     ],
@@ -66,7 +66,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/canale5.png",
     "description": "Canale 5 - Mediaset",
     "category": "mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8",
     "vavooNames": [
       "CANALE 5"
     ],
@@ -81,7 +81,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/italia1.png",
     "description": "Italia 1 - Mediaset",
     "category": "mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8",
     "vavooNames": [
       "ITALIA 1"
     ],
@@ -96,7 +96,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la7.png",
     "description": "LA7 - Canale privato italiano",
     "category": "general",
-    "staticUrl": "https://d15umi5iaezxgx.cloudfront.net/LA7/CLN/HLS-B/Live_1280x720_.m3u8",
+    "staticUrlF": "https://d15umi5iaezxgx.cloudfront.net/LA7/CLN/HLS-B/Live_1280x720_.m3u8",
     "vavooNames": [
       "LA7"
     ],
@@ -111,7 +111,7 @@
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tv8.png",
     "description": "TV8 - Sky",
     "category": "sky",
-    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "staticUrlF": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
     "vavooNames": [
       "TV8"
     ],
@@ -125,7 +125,7 @@
     "name": "NOVE",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/nove.png",
     "description": "NOVE - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c1-samsung-it-1831.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-nove-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c1-samsung-it-1831.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-nove-samsungit/playlist.m3u8",
     "vavooNames": [
       "NOVE"
     ],
@@ -140,7 +140,7 @@
     "name": "20 Mediaset",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/20mediaset.png",
     "description": "20 Mediaset - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8",
     "vavooNames": [
       "20 MEDIASET"
     ],
@@ -155,7 +155,7 @@
     "name": "Rai 4",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai4.png",
     "description": "Rai 4 - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI 4"
     ],
@@ -170,7 +170,7 @@
     "name": "Iris",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/iris.png",
     "description": "Iris - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8",
     "vavooNames": [
       "IRIS"
     ],
@@ -185,7 +185,7 @@
     "name": "Rai 5",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai5.png",
     "description": "Rai 5 - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI 5"
     ],
@@ -200,7 +200,7 @@
     "name": "Rai Movie",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raimovie.png",
     "description": "Rai Movie - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI MOVIE"
     ],
@@ -215,7 +215,7 @@
     "name": "Rai Premium",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raipremium.png",
     "description": "Rai Premium - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI PREMIUM"
     ],
@@ -230,7 +230,7 @@
     "name": "Cielo",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cielo.png",
     "description": "Cielo - Sky",
-    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "staticUrlF": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8?hdnea=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
     "vavooNames": [
       "CIELO"
     ],
@@ -245,7 +245,7 @@
     "name": "Twenty Seven",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/twentyseven.png",
     "description": "Twenty Seven - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ts/ts-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ts/ts-clr.isml/index.m3u8",
     "vavooNames": [
       "TWENTY SEVEN"
     ],
@@ -260,7 +260,7 @@
     "name": "TV2000",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tv2000.png",
     "description": "TV2000 - Canale religioso",
-    "staticUrl": "https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8",
+    "staticUrlF": "https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8",
     "vavooNames": [
       "TV2000"
     ],
@@ -275,7 +275,7 @@
     "name": "LA7d",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la7d.png",
     "description": "LA7d - Canale privato italiano",
-    "staticUrl": "https://d15umi5iaezxgx.cloudfront.net/LA7D/CLN/HLS-B/Live_1280x720_.m3u8",
+    "staticUrlF": "https://d15umi5iaezxgx.cloudfront.net/LA7D/CLN/HLS-B/Live_1280x720_.m3u8",
     "vavooNames": [
       "LA7D"
     ],
@@ -290,7 +290,7 @@
     "name": "La 5",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/la5.png",
     "description": "La 5 - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8",
     "vavooNames": [
       "LA 5"
     ],
@@ -305,7 +305,7 @@
     "name": "Real Time",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/realtime.png",
     "description": "Real Time - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c2-samsung-it-1835.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-realtime-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c2-samsung-it-1835.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-realtime-samsungit/playlist.m3u8",
     "vavooNames": [
       "REAL TIME"
     ],
@@ -320,7 +320,7 @@
     "name": "QVC",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/qvc.png",
     "description": "QVC - Canale commerciale",
-    "staticUrl": "https://qrg.akamaized.net/hls/live/2017383/lsqvc1it/master.m3u8",
+    "staticUrlF": "https://qrg.akamaized.net/hls/live/2017383/lsqvc1it/master.m3u8",
     "vavooNames": [
       "QVC"
     ],
@@ -335,7 +335,7 @@
     "name": "Food Network",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/foodnetwork.png",
     "description": "Food Network - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c3-samsung-it-1836.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-foodnetwork-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c3-samsung-it-1836.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-foodnetwork-samsungit/playlist.m3u8",
     "vavooNames": [
       "FOOD NETWORK"
     ],
@@ -350,7 +350,7 @@
     "name": "Cine34",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cine34.png",
     "description": "Cine34 - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8",
     "vavooNames": [
       "CINE34"
     ],
@@ -365,7 +365,7 @@
     "name": "FOCUS",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/focus.png",
     "description": "FOCUS - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8",
     "vavooNames": [
       "FOCUS"
     ],
@@ -380,7 +380,7 @@
     "name": "RTL 102.5",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rtl1025tv.png",
     "description": "RTL 102.5 - Canale radio-TV",
-    "staticUrl": "https://streamcdng9-dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/chunklist_b2816000.m3u8",
+    "staticUrlF": "https://streamcdng9-dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/chunklist_b2816000.m3u8",
     "vavooNames": [
       "RTL 102.5"
     ],
@@ -395,7 +395,7 @@
     "name": "Warner TV",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/warnertv.png",
     "description": "Warner TV - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c4-samsung-it-1837.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-warnertv-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c4-samsung-it-1837.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-warnertv-samsungit/playlist.m3u8",
     "vavooNames": [
       "WARNER TV"
     ],
@@ -410,7 +410,7 @@
     "name": "Giallo",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/giallo.png",
     "description": "Giallo - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c5-samsung-it-1838.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-giallo-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c5-samsung-it-1838.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-giallo-samsungit/playlist.m3u8",
     "vavooNames": [
       "GIALLO"
     ],
@@ -425,7 +425,7 @@
     "name": "Top Crime",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/topcrime.png",
     "description": "Top Crime - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8",
     "vavooNames": [
       "TOP CRIME"
     ],
@@ -440,7 +440,7 @@
     "name": "Boing",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/boing.png",
     "description": "Boing - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8",
     "vavooNames": [
       "BOING"
     ],
@@ -455,7 +455,7 @@
     "name": "K2",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/k2.png",
     "description": "K2 - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c6-samsung-it-1839.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-k2-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c6-samsung-it-1839.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-k2-samsungit/playlist.m3u8",
     "vavooNames": [
       "K2"
     ],
@@ -470,7 +470,7 @@
     "name": "Rai Gulp",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raigulp.png",
     "description": "Rai Gulp - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI GULP"
     ],
@@ -485,7 +485,7 @@
     "name": "Rai Yoyo",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raiyoyo.png",
     "description": "Rai Yoyo - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI YOYO"
     ],
@@ -500,7 +500,7 @@
     "name": "Frisbee",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/frisbee.png",
     "description": "Frisbee - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c7-samsung-it-1840.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-frisbee-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c7-samsung-it-1840.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-frisbee-samsungit/playlist.m3u8",
     "vavooNames": [
       "FRISBEE"
     ],
@@ -515,7 +515,7 @@
     "name": "Cartoonito",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/cartoonito.png",
     "description": "Cartoonito - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8",
     "vavooNames": [
       "CARTOONITO"
     ],
@@ -530,7 +530,7 @@
     "name": "Super!",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/super.png",
     "description": "Super! - Canale gratuito",
-    "staticUrl": "https://vimnitaly.akamaized.net/hls/live/2094034/super/master.m3u8",
+    "staticUrlF": "https://vimnitaly.akamaized.net/hls/live/2094034/super/master.m3u8",
     "vavooNames": [
       "SUPER"
     ],
@@ -545,7 +545,7 @@
     "name": "Rai News 24",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rainews24.png",
     "description": "Rai News 24 - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI NEWS 24"
     ],
@@ -560,7 +560,7 @@
     "name": "Italia 2",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/italia2.png",
     "description": "Italia 2 - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8",
     "vavooNames": [
       "ITALIA 2"
     ],
@@ -575,7 +575,7 @@
     "name": "Sky TG24",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/skytg24.png",
     "description": "Sky TG24 - Sky",
-    "staticUrl": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8?hdnts=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
+    "staticUrlF": "https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8?hdnts=st=1701861650~exp=1765449000~acl=/*~hmac=84c9f3f71e57b13c3a67afa8b29a8591ea9ed84bf786524399545d94be1ec04d",
     "vavooNames": [
       "SKY TG24"
     ],
@@ -590,7 +590,7 @@
     "name": "TGCOM 24",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/tgcom24.png",
     "description": "TGCOM 24 - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8",
     "vavooNames": [
       "TGCOM 24"
     ],
@@ -605,7 +605,7 @@
     "name": "DMAX",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/dmax.png",
     "description": "DMAX - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c8-samsung-it-1841.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-dmax-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c8-samsung-it-1841.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-dmax-samsungit/playlist.m3u8",
     "vavooNames": [
       "DMAX"
     ],
@@ -620,7 +620,7 @@
     "name": "Rai Storia",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raistoria.png",
     "description": "Rai Storia - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI STORIA"
     ],
@@ -635,7 +635,7 @@
     "name": "Mediaset Extra",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/mediasetextra.png",
     "description": "Mediaset Extra - Mediaset",
-    "staticUrl": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8",
+    "staticUrlF": "https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8",
     "vavooNames": [
       "MEDIASET EXTRA"
     ],
@@ -650,7 +650,7 @@
     "name": "HGTV - Home&Garden",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/homegardentv.png",
     "description": "HGTV - Home&Garden - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c9-samsung-it-1842.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-hgtv-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c9-samsung-it-1842.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-hgtv-samsungit/playlist.m3u8",
     "vavooNames": [
       "HGTV"
     ],
@@ -665,7 +665,7 @@
     "name": "Rai Scuola",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raiscuola.png",
     "description": "Rai Scuola - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747011&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747011&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI SCUOLA"
     ],
@@ -680,7 +680,7 @@
     "name": "Rai Sport + HD",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/raisport+hd.png",
     "description": "Rai Sport + HD - Canale pubblico italiano",
-    "staticUrl": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7&forceUserAgent=raiplayappletv",
+    "staticUrlF": "http://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7&forceUserAgent=raiplayappletv",
     "vavooNames": [
       "RAI SPORT"
     ],
@@ -695,7 +695,7 @@
     "name": "Motor Trend",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/motortrend.png",
     "description": "Motor Trend - Warner Bros Discovery",
-    "staticUrl": "https://amg16146-wbdi-amg16146c10-samsung-it-1843.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-motortrend-samsungit/playlist.m3u8",
+    "staticUrlF": "https://amg16146-wbdi-amg16146c10-samsung-it-1843.playouts.now.amagi.tv/playlist/amg16146-warnerbrosdiscoveryitalia-motortrend-samsungit/playlist.m3u8",
     "vavooNames": [
       "MOTOR TREND"
     ],
@@ -710,7 +710,7 @@
     "name": "Sportitalia",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/sportitalia.png",
     "description": "Sportitalia - Canale sportivo",
-    "staticUrl": "https://sportitaliaamd.akamaized.net/live/Sportitalia/hls/F59D8EB0332E783633CDDE8E265844975635D24F/index.m3u8",
+    "staticUrlF": "https://sportitaliaamd.akamaized.net/live/Sportitalia/hls/F59D8EB0332E783633CDDE8E265844975635D24F/index.m3u8",
     "vavooNames": [
       "SPORTITALIA"
     ],
@@ -720,27 +720,12 @@
     "category": "mediaset"
   },
   {
-    "id": "donnatv",
-    "type": "tv",
-    "name": "Donna TV",
-    "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/donnatv.png",
-    "description": "Donna TV - Canale tematico",
-    "staticUrl": "https://sportitaliaamd.akamaized.net/live/Donna_TV/hls/42EB42E58EA44362045EFEA804E3FCF0DB33C481/index.m3u8",
-    "vavooNames": [
-      "DONNA TV"
-    ],
-    "epgChannelIds": [
-      "DonnaTV.it"
-    ],
-    "category": "general"
-  },
-  {
     "id": "supertennis",
     "type": "tv",
     "name": "Supertennis",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/supertennis.png",
     "description": "Supertennis - Canale sportivo",
-    "staticUrl": "https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/rtmp/hls/h24_supertennix/manifest.m3u8",
+    "staticUrlF": "https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/rtmp/hls/h24_supertennix/manifest.m3u8",
     "vavooNames": [
       "SUPERTENNIS"
     ],
@@ -755,7 +740,7 @@
     "name": "Rai 4K (HbbTV)",
     "poster": "https://cdn.jsdelivr.net/gh/Tundrak/IPTV-Italia/logos/rai4k.png",
     "description": "Rai 4K (HbbTV) - Canale pubblico italiano",
-    "staticUrl": "https://raievent10-elem-live.akamaized.net/hls/live/619189/raievent10/raievent10/playlist.m3u8",
+    "staticUrlF": "https://raievent10-elem-live.akamaized.net/hls/live/619189/raievent10/raievent10/playlist.m3u8",
     "vavooNames": [
       "RAI 4K"
     ],
