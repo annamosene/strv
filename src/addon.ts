@@ -997,7 +997,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                     if ((channel as any).name && vavooCache.links.has((channel as any).name)) {
                         const vavooOriginalLink = vavooCache.links.get((channel as any).name);
                         if (tvProxyUrl) {
-                            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
+                            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent((vavooOriginalLink || ''))}`;
                             streams.push({
                                 url: vavooProxyUrl,
                                 title: `[✌️V] ${channel.name}`
