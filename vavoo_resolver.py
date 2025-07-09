@@ -83,7 +83,8 @@ def getAuthSignature():
         }
     }
     try:
-        resp = requests.post(f"https://{VAVOO_DOMAIN}/api/app/ping", json=data, headers=headers, timeout=10)
+        # Usa sempre il dominio ufficiale per la signature!
+        resp = requests.post("https://www.vavoo.tv/api/app/ping", json=data, headers=headers, timeout=10)
         resp.raise_for_status()
         return resp.json().get("addonSig")
     except Exception as e:
