@@ -227,11 +227,13 @@ def build_vavoo_cache(channels):
         url = ch.get("url", "")
         if not name or not url:
             continue
-        # Salva la chiave esatta
-        cache[name] = url
+        # Salva la chiave esatta come lista
+        if name not in cache:
+            cache[name] = []
+        cache[name].append(url)
         # Salva anche la chiave base per lookup multiplo
         base_name = re.sub(r'\s*(\(\d+\)|\d+)$', '', name).strip()
-        if base_name not in cache or not isinstance(cache[base_name], list):
+        if base_name not in cache:
             cache[base_name] = []
         cache[base_name].append(url)
     return cache
