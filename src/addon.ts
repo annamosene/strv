@@ -320,7 +320,9 @@ if (!fs.existsSync(vavaoCachePath)) {
 function loadVavooCache(): void {
     try {
         if (fs.existsSync(vavaoCachePath)) {
-            const cacheData = JSON.parse(fs.readFileSync(vavaoCachePath, 'utf-8'));
+            const rawCache = fs.readFileSync(vavaoCachePath, 'utf-8');
+            console.log('🔧 [VAVOO] RAW vavoo_cache.json:', rawCache); // DEBUG RAW
+            const cacheData = JSON.parse(rawCache);
             vavooCache.timestamp = cacheData.timestamp || 0;
             vavooCache.links = new Map(Object.entries(cacheData.links || {}));
             console.log(`📺 Vavoo cache caricata con ${vavooCache.links.size} canali, aggiornata il: ${new Date(vavooCache.timestamp).toLocaleString()}`);
