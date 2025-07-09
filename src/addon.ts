@@ -326,6 +326,14 @@ function loadVavooCache(): void {
             console.log(`📺 Vavoo cache caricata con ${vavooCache.links.size} canali, aggiornata il: ${new Date(vavooCache.timestamp).toLocaleString()}`);
             console.log('🔧 [VAVOO] DEBUG - Cache caricata all\'avvio:', vavooCache.links.size, 'canali');
             console.log('🔧 [VAVOO] DEBUG - Path cache:', vavaoCachePath);
+            // Stampa dettagliata del contenuto della cache
+            for (const [k, v] of vavooCache.links.entries()) {
+                if (Array.isArray(v)) {
+                    console.log(`[VAVOO CACHE] ${k}: ${v.length} link ->`, v);
+                } else {
+                    console.log(`[VAVOO CACHE] ${k}: 1 link ->`, v);
+                }
+            }
         } else {
             console.log(`📺 File cache Vavoo non trovato, verrà creato al primo aggiornamento`);
         }
