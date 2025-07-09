@@ -1031,12 +1031,14 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         }
                     }
 
-                    // Converti in formato Stream
-                    const finalStreams: Stream[] = streams.map(s => ({
-                        name: 'StreamViX TV',
-                        title: s.title,
-                        url: s.url
-                    }));
+                    // Dopo aver popolato streams (nella logica TV):
+                    for (const s of streams) {
+                        allStreams.push({
+                            name: 'StreamViX TV',
+                            title: s.title,
+                            url: s.url
+                        });
+                    }
 
                     // 5. AGGIUNGI STREAM ALTERNATIVI/FALLBACK per canali specifici
                     // RIMOSSO: Blocco che aggiunge fallback stream alternativi per canali Sky (skyFallbackUrls) se finalStreams.length < 3
