@@ -1001,8 +1001,17 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                     }
                     // Vavoo
                     if ((channel as any).name) {
+                        // DEBUG LOGS
+                        console.log('🔧 [VAVOO] DEBUG - channel.name:', (channel as any).name);
+                        const allVavooKeys = Array.from(vavooCache.links.keys());
+                        console.log('🔧 [VAVOO] DEBUG - vavooCache.links keys:', allVavooKeys);
                         // Cerca tutte le varianti: esatta, (2), 2, lista base
                         const baseName = (channel as any).name.replace(/\s*(\(\d+\)|\d+)$/, '').trim();
+                        console.log('🔧 [VAVOO] DEBUG - baseName:', baseName);
+                        const variant2 = `${baseName} (2)`;
+                        const variantNum = `${baseName} 2`;
+                        console.log('🔧 [VAVOO] DEBUG - variant2:', variant2);
+                        console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
                         const links: string[] = [];
                         // 1. Lista multipla (preferita)
                         const baseLinksRaw = vavooCache.links.get(baseName);
@@ -1019,18 +1028,23 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                             links.push(exactLinkRaw);
                         }
                         // 3. Variante (2)
-                        const variant2Raw = vavooCache.links.get(`${baseName} (2)`);
+                        const variant2Raw = vavooCache.links.get(variant2);
                         if (Array.isArray(variant2Raw)) {
                             for (const l of variant2Raw) if (!links.includes(l)) links.push(l);
                         } else if (typeof variant2Raw === 'string' && !links.includes(variant2Raw)) {
                             links.push(variant2Raw);
                         }
                         // 4. Variante 2
-                        const variantNumRaw = vavooCache.links.get(`${baseName} 2`);
+                        const variantNumRaw = vavooCache.links.get(variantNum);
                         if (Array.isArray(variantNumRaw)) {
                             for (const l of variantNumRaw) if (!links.includes(l)) links.push(l);
                         } else if (typeof variantNumRaw === 'string' && !links.includes(variantNumRaw)) {
                             links.push(variantNumRaw);
+                        }
+                        // DEBUG: log links trovati
+                        console.log('🔧 [VAVOO] DEBUG - links trovati per', (channel as any).name, ':', links);
+                        if (links.length === 0) {
+                            console.warn('❌ [VAVOO] Nessun link trovato per', (channel as any).name, '- Prova a controllare la cache e la normalizzazione!');
                         }
                         // Aggiungi tutti i link trovati come stream separati
                         links.forEach((vavooOriginalLink, idx) => {
