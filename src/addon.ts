@@ -996,30 +996,13 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                             staticUrl2: staticUrl2 || 'missing', 
                             staticUrlD: staticUrlD || 'missing'
                         });
-                        
-                        // SOLUZIONE RAPIDA: Forza sempre la configurazione MFP specifica per Sky
-                        debugLog(`🔧 FORCING MFP config for Sky channel: ${channelName}`);
-                        mfpUrl = 'https://mfpi.pizzapi.uk';
-                        mfpPsw = 'mfp';
-                        
-                        // SOLUZIONE SPECIFICA per Sky Cinema Due
-                        if (cleanId === 'skycinemadue') {
-                            debugLog(`🎬 SPECIAL FIX for Sky Cinema Due`);
-                            // Assicuriamoci che abbia gli stream URL corretti
-                            if (!staticUrl && !staticUrl2) {
-                                debugLog(`⚠️ Sky Cinema Due missing stream URLs, setting defaults`);
-                                // Aggiungi URL di default se mancanti
-                                (channel as any).staticUrl = "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skycinemadue)/master_2hr-aac.mpd&key_id=11152c4ea1a3bffdd277ce333e54631a&key=17f0c028800dbcb294b9aebbae1f7e0c";
-                                (channel as any).staticUrl2 = "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skycinemadue)/master_2hr-all.mpd&key_id=11188795ebfd4e72afb27b55b8e2905b&key=41e5b5a8bf54ce8d23873eb46761c288";
-                            }
-                        }
                     }
                     
-                    // ✅ IMPORTANTE: USA SEMPRE i proxy REALI per Stremio Web (non localhost)
-                    if (mfpUrl && mfpUrl.includes('192.168.1.100')) {
-                        debugLog('🌐 Converting localhost MFP URL to real proxy for Stremio Web compatibility');
-                        mfpUrl = 'https://mfpi.pizzapi.uk';
-                        mfpPsw = 'mfp';
+                    // Se il proxy è locale, non usarlo per Stremio Web
+                    if (mfpUrl && (mfpUrl.includes('localhost') || mfpUrl.includes('192.168'))) {
+                        debugLog('🌐 Proxy MFP locale rilevato, non verrà usato per Stremio Web');
+                        mfpUrl = '';
+                        mfpPsw = '';
                     }
                     
                     // 1. Stream via staticUrl (SOLO PROXY PUBBLICI che funzionano in Stremio Web!)
