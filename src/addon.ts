@@ -291,13 +291,13 @@ let globalRouter: any;
 // Cache per i link Vavoo
 interface VavooCache {
     timestamp: number;
-    links: Map<string, string>;
+    links: Map<string, string | string[]>;
     updating: boolean;
 }
 
 const vavooCache: VavooCache = {
     timestamp: 0,
-    links: new Map<string, string>(),
+    links: new Map<string, string | string[]>(),
     updating: false
 };
 
@@ -362,7 +362,7 @@ async function updateVavooCache(): Promise<boolean> {
         const channelNames = tvChannels.map(channel => channel.name).filter(Boolean);
         
         // Aggiorna la cache per tutti i canali
-        const updatedLinks = new Map<string, string>();
+        const updatedLinks = new Map<string, string | string[]>();
         let successCount = 0;
         let errorCount = 0;
 
@@ -994,22 +994,47 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         }
                     }
                     // Vavoo
-                    if ((channel as any).name && vavooCache.links.has((channel as any).name)) {
-                        const vavooOriginalLink = vavooCache.links.get((channel as any).name);
-                        if (tvProxyUrl) {
-                            const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent((vavooOriginalLink || ''))}`;
-                            streams.push({
-                                url: vavooProxyUrl,
-                                title: `[✌️V] ${channel.name}`
-                            });
-                            debugLog(`Aggiunto Vavoo Proxy (TV): ${vavooProxyUrl}`);
-                        } else {
-                            streams.push({
-                                url: vavooOriginalLink || '',
-                                title: `[❌Proxy][✌️V] ${channel.name}`
-                            });
-                            debugLog(`Aggiunto Vavoo Direct: ${vavooOriginalLink}`);
+                    if ((channel as any).name) {
+                        // Cerca tutte le varianti: esatta, (2), 2, lista base
+                        const baseName = (channel as any).name.replace(/\s*(\(\d+\)|\d+)$/, '').trim();
+                        const links: string[] = [];
+                        // 1. Lista multipla (preferita)
+                        const baseLinks = vavooCache.links.get(baseName);
+                        if (Array.isArray(baseLinks)) {
+                            links.push(...baseLinks);
                         }
+                        // 2. Chiave esatta (singolo)
+                        const exactLink = vavooCache.links.get((channel as any).name);
+                        if (typeof exactLink === 'string' && !links.includes(exactLink)) {
+                            links.push(exactLink);
+                        }
+                        // 3. Variante (2)
+                        const variant2 = vavooCache.links.get(`${baseName} (2)`);
+                        if (typeof variant2 === 'string' && !links.includes(variant2)) {
+                            links.push(variant2);
+                        }
+                        // 4. Variante 2
+                        const variantNum = vavooCache.links.get(`${baseName} 2`);
+                        if (typeof variantNum === 'string' && !links.includes(variantNum)) {
+                            links.push(variantNum);
+                        }
+                        // Aggiungi tutti i link trovati come stream separati
+                        links.forEach((vavooOriginalLink, idx) => {
+                            if (tvProxyUrl) {
+                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent((vavooOriginalLink || ''))}`;
+                                streams.push({
+                                    url: vavooProxyUrl,
+                                    title: idx === 0 ? `[✌️V] ${channel.name}` : `[✌️V-${idx+1}] ${channel.name}`
+                                });
+                                debugLog(`Aggiunto Vavoo Proxy (TV): ${vavooProxyUrl}`);
+                            } else {
+                                streams.push({
+                                    url: vavooOriginalLink || '',
+                                    title: idx === 0 ? `[❌Proxy][✌️V] ${channel.name}` : `[❌Proxy][✌️V-${idx+1}] ${channel.name}`
+                                });
+                                debugLog(`Aggiunto Vavoo Direct: ${vavooOriginalLink}`);
+                            }
+                        });
                     }
 
                     // Dopo aver popolato streams (nella logica TV):
