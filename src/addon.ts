@@ -1019,7 +1019,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                             });
                         } else if (!(hasProxy)) {
                             streams.push({
-                                url: vavooOriginalLink,
+                                url: vavooOriginalLink || '',
                                 title: `[❌Proxy][✌️V] ${channel.name}`
                             });
                         }
