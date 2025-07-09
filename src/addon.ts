@@ -197,22 +197,6 @@ function parseConfigFromArgs(args: any): AddonConfig {
     if (typeof args === 'string') {
         debugLog(`Configuration string: ${args.substring(0, 50)}... (length: ${args.length})`);
         
-        // SOLUZIONE SEMPLIFICATA: Controlla se è la configurazione MFP specifica
-        const knownConfigs = [
-            'eyJtZnBQcm94eVVybCI6Imh0dHA6Ly8xOTIuMTY4LjEuMTAwOjkwMDAi',
-            'eyJtZnBQcm94eVVybCI6Imh0dHA',
-            'eyJ'
-        ];
-        
-        // Se contiene una delle firme conosciute, applica la configurazione hardcoded
-        if (knownConfigs.some(pattern => args.includes(pattern))) {                        debugLog('Found known MFP config pattern, applying hardcoded values');
-                        return {
-                            mfpProxyUrl: 'https://mfpi.pizzapi.uk/',
-                            mfpProxyPassword: 'mfp',
-                            enableLiveTV: 'on'
-                        };
-        }
-        
         // PASSO 1: Prova JSON diretto
         try {
             const parsed = JSON.parse(args);
