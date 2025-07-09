@@ -1029,17 +1029,12 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         const variantNum = `${baseName} 2`;
                         console.log('🔧 [VAVOO] DEBUG - variant2:', variant2);
                         console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
-                        // Cerca i link Vavoo per il canale
+                        // --- VAVOO: raccolta e aggiunta di tutti i link come stream separati ---
+                        let linksArr: string[] = [];
+                        // 1. Base name
                         const vavooLinksRaw = vavooCache.links.get(baseName);
                         if (vavooLinksRaw) {
-                            const linksArr: string[] = Array.isArray(vavooLinksRaw) ? vavooLinksRaw : [vavooLinksRaw];
-                            linksArr.forEach((link: string, idx: number) => {
-                                streams.push({
-                                    title: `[✌️V${idx > 0 ? '-' + (idx + 1) : ''}] ${baseName}`,
-                                    url: buildProxyUrl(link),
-                                    // ...altre proprietà se servono
-                                });
-                            });
+                            linksArr = Array.isArray(vavooLinksRaw) ? vavooLinksRaw.slice() : [vavooLinksRaw];
                         }
                         // 2. Chiave esatta (singolo)
                         const exactLinkRaw = vavooCache.links.get((channel as any).name);
@@ -1062,25 +1057,20 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         } else if (typeof variantNumRaw === 'string' && !linksArr.includes(variantNumRaw)) {
                             linksArr.push(variantNumRaw);
                         }
-                        // DEBUG: log links trovati
-                        console.log('🔧 [VAVOO] DEBUG - links trovati per', (channel as any).name, ':', linksArr);
-                        if (linksArr.length === 0) {
-                            console.warn('❌ [VAVOO] Nessun link trovato per', (channel as any).name, '- Prova a controllare la cache e la normalizzazione!');
-                        }
                         // Aggiungi tutti i link trovati come stream separati
                         linksArr.forEach((vavooOriginalLink: string, idx: number) => {
                             if (typeof vavooOriginalLink !== 'string') return;
                             if (tvProxyUrl) {
                                 const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
                                 streams.push({
-                                    title: idx === 0 ? `[✌️V] ${channel.name}` : `[✌️V-${idx+1}] ${channel.name}`
+                                    title: idx === 0 ? `[✌️V] ${channel.name}` : `[✌️V-${idx+1}] ${channel.name}`,
+                                    url: vavooProxyUrl
                                 });
-                                debugLog(`Aggiunto Vavoo Proxy (TV): ${vavooProxyUrl}`);
                             } else {
                                 streams.push({
-                                    title: idx === 0 ? `[❌Proxy][✌️V] ${channel.name}` : `[❌Proxy][✌️V-${idx+1}] ${channel.name}`
+                                    title: idx === 0 ? `[❌Proxy][✌️V] ${channel.name}` : `[❌Proxy][✌️V-${idx+1}] ${channel.name}`,
+                                    url: vavooOriginalLink
                                 });
-                                debugLog(`Aggiunto Vavoo Direct: ${vavooOriginalLink}`);
                             }
                         });
                     }
