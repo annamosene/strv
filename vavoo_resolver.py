@@ -10,13 +10,10 @@ import json
 import os
 import re
 
-def get_domain(service):
-    config_path = os.path.join(os.path.dirname(__file__), 'config/domains.json')
-    with open(config_path, 'r') as f:
-        domains = json.load(f)
-    return domains.get(service)
+with open(os.path.join(os.path.dirname(__file__), 'config/domains.json'), encoding='utf-8') as f:
+    DOMAINS = json.load(f)
 
-VAVOO_DOMAIN = get_domain("vavoo")
+VAVOO_DOMAIN = DOMAINS.get("vavoo")
 
 def getAuthSignature():
     """Funzione che replica esattamente quella dell'addon utils.py"""
@@ -86,7 +83,7 @@ def getAuthSignature():
         }
     }
     try:
-        resp = requests.post("https://www.vavoo.tv/api/app/ping", json=data, headers=headers, timeout=10)
+        resp = requests.post(f"https://{VAVOO_DOMAIN}/api/app/ping", json=data, headers=headers, timeout=10)
         resp.raise_for_status()
         return resp.json().get("addonSig")
     except Exception as e:
@@ -108,7 +105,7 @@ def get_channels():
     }
     all_channels = []
     # Lista dei gruppi da controllare per i canali TV
-    groups = ["Italy", "Germany", "UK", "Spain", "France", "Portugal", "USA"]
+    groups = ["Italy"]
     for group in groups:
         cursor = 0
         while True:
