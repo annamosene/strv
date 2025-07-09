@@ -321,21 +321,14 @@ function loadVavooCache(): void {
     try {
         if (fs.existsSync(vavaoCachePath)) {
             const rawCache = fs.readFileSync(vavaoCachePath, 'utf-8');
-            console.log('🔧 [VAVOO] RAW vavoo_cache.json:', rawCache); // DEBUG RAW
+            // RIMOSSO: console.log('🔧 [VAVOO] RAW vavoo_cache.json:', rawCache);
             const cacheData = JSON.parse(rawCache);
             vavooCache.timestamp = cacheData.timestamp || 0;
             vavooCache.links = new Map(Object.entries(cacheData.links || {}));
             console.log(`📺 Vavoo cache caricata con ${vavooCache.links.size} canali, aggiornata il: ${new Date(vavooCache.timestamp).toLocaleString()}`);
             console.log('🔧 [VAVOO] DEBUG - Cache caricata all\'avvio:', vavooCache.links.size, 'canali');
             console.log('🔧 [VAVOO] DEBUG - Path cache:', vavaoCachePath);
-            // Stampa dettagliata del contenuto della cache
-            for (const [k, v] of vavooCache.links.entries()) {
-                if (Array.isArray(v)) {
-                    console.log(`[VAVOO CACHE] ${k}: ${v.length} link ->`, v);
-                } else {
-                    console.log(`[VAVOO CACHE] ${k}: 1 link ->`, v);
-                }
-            }
+            // RIMOSSO: stampa dettagliata del contenuto della cache
         } else {
             console.log(`📺 File cache Vavoo non trovato, verrà creato al primo aggiornamento`);
         }
@@ -1036,13 +1029,17 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         const variantNum = `${baseName} 2`;
                         console.log('🔧 [VAVOO] DEBUG - variant2:', variant2);
                         console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
-                        const links: string[] = [];
-                        // 1. Lista multipla (preferita)
-                        const baseLinksRaw = vavooCache.links.get(baseName);
-                        if (Array.isArray(baseLinksRaw)) {
-                            links.push(...baseLinksRaw);
-                        } else if (typeof baseLinksRaw === 'string') {
-                            links.push(baseLinksRaw);
+                        // Cerca i link Vavoo per il canale
+                        const vavooLinksRaw = vavooCache.links.get(baseName);
+                        if (vavooLinksRaw) {
+                            const linksArr = Array.isArray(vavooLinksRaw) ? vavooLinksRaw : [vavooLinksRaw];
+                            linksArr.forEach((link, idx) => {
+                                streams.push({
+                                    name: `[✌️V${idx > 0 ? '-' + (idx + 1) : ''}] ${baseName}`,
+                                    url: buildProxyUrl(link),
+                                    // ...altri campi stream se servono
+                                });
+                            });
                         }
                         // 2. Chiave esatta (singolo)
                         const exactLinkRaw = vavooCache.links.get((channel as any).name);
