@@ -945,7 +945,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                     // staticUrl
                     if ((channel as any).staticUrl) {
                         if (mfpUrl && mfpPsw) {
-                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl)}`;
+                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${(channel as any).staticUrl}`;
                             streams.push({
                                 url: proxyUrl,
                                 title: `[📺HD] ${channel.name}`
@@ -962,7 +962,7 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                     // staticUrl2
                     if ((channel as any).staticUrl2) {
                         if (mfpUrl && mfpPsw) {
-                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${encodeURIComponent((channel as any).staticUrl2)}`;
+                            const proxyUrl = `${mfpUrl}/proxy/mpd/manifest.m3u8?api_password=${encodeURIComponent(mfpPsw)}&d=${(channel as any).staticUrl2}`;
                             streams.push({
                                 url: proxyUrl,
                                 title: `[📽️FHD] ${channel.name}`
