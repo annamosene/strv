@@ -507,6 +507,8 @@ def main_cli():
                 if mfp_proxy_url and mfp_proxy_password:
                     # Costruisci URL proxy per l'm3u8, rimuovendo eventuali https:// già presenti nell'URL
                     mfp_url_normalized = mfp_proxy_url.replace("https://", "").replace("http://", "")
+                    if mfp_url_normalized.endswith("/"):
+                        mfp_url_normalized = mfp_url_normalized[:-1]
                     proxy_url = f"https://{mfp_url_normalized}/proxy/hls/manifest.m3u8?d={stream_url}&api_password={mfp_proxy_password}"
                     stremio_stream = {
                         "url": proxy_url,
