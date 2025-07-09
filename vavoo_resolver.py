@@ -254,14 +254,7 @@ if "--build-cache" in sys.argv:
     with open("vavoo_cache.json", "w", encoding="utf-8") as f:
         json.dump({"links": cache}, f, ensure_ascii=False, indent=2)
     print("Cache Vavoo generata con successo!")
-    # Stampa il debug direttamente nei log
-    print("--- DEBUG: CHIAVI CACHE VAVOO ---")
-    for k, v in cache.items():
-        if isinstance(v, list):
-            print(f"{k}: {len(v)} link -> {v}")
-        else:
-            print(f"{k}: 1 link -> {v}")
-    print("--- FINE DEBUG ---")
+    # RIMOSSO: stampa debug dettagliata
     sys.exit(0)
 
 if __name__ == "__main__":
