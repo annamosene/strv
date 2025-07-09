@@ -515,6 +515,16 @@ try {
     
     // Carica la cache Vavoo
     loadVavooCache();
+
+    // Dopo il caricamento della cache Vavoo
+    if (vavooCache && vavooCache.links) {
+        try {
+            const cacheObj = Object.fromEntries(vavooCache.links);
+            console.log('[VAVOO] DUMP CACHE COMPLETA:', JSON.stringify(cacheObj, null, 2));
+        } catch (e) {
+            console.log('[VAVOO] ERRORE DUMP CACHE:', e);
+        }
+    }
     
     // Aggiorna la cache Vavoo in background all'avvio
     setTimeout(() => {
