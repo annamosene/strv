@@ -1028,6 +1028,8 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
                         // --- VAVOO: cerca tutte le varianti .<lettera> per ogni nome in vavooNames (case-insensitive), sia originale che normalizzato ---
                         const vavooNamesArr = (channel as any).vavooNames || [channel.name];
+                        // LOG RAW delle chiavi della cache
+                        console.log('[VAVOO] CACHE KEYS RAW:', Array.from(vavooCache.links.keys()));
                         console.log(`[VAVOO] CERCA: vavooNamesArr =`, vavooNamesArr);
                         const allCacheKeys = Array.from(vavooCache.links.keys());
                         console.log(`[VAVOO] CACHE KEYS:`, allCacheKeys);
