@@ -1029,47 +1029,35 @@ function createBuilder(initialConfig: AddonConfig = {}) {
                         const variantNum = `${baseName} 2`;
                         console.log('🔧 [VAVOO] DEBUG - variant2:', variant2);
                         console.log('🔧 [VAVOO] DEBUG - variantNum:', variantNum);
-                        // --- VAVOO: raccolta e aggiunta di tutti i link come stream separati ---
-                        let linksArr: string[] = [];
-                        // 1. Base name
-                        const vavooLinksRaw = vavooCache.links.get(baseName);
-                        if (vavooLinksRaw) {
-                            linksArr = Array.isArray(vavooLinksRaw) ? vavooLinksRaw.slice() : [vavooLinksRaw];
+                        // --- VAVOO: raccolta e aggiunta di tutte le varianti (.c, .s, ecc) come stream separati ---
+                        const baseNameNorm = (baseName || '').toUpperCase().replace(/\s+/g, ' ').trim();
+                        const allVavooLinks: { url: string, variant: string }[] = [];
+                        for (const [key, value] of vavooCache.links.entries()) {
+                            // Normalizza la chiave per confronto robusto
+                            const keyNorm = (key || '').toUpperCase().replace(/\s+/g, ' ').trim();
+                            if (keyNorm.startsWith(baseNameNorm)) {
+                                // Estrai la variante (es: .c, .s, ecc)
+                                const variantMatch = keyNorm.slice(baseNameNorm.length).trim();
+                                const variant = variantMatch.startsWith('.') ? variantMatch : (variantMatch ? `_${variantMatch}` : '');
+                                const links = Array.isArray(value) ? value : [value];
+                                for (const url of links) {
+                                    if (url && !allVavooLinks.some(l => l.url === url && l.variant === variant)) {
+                                        allVavooLinks.push({ url, variant });
+                                    }
+                                }
+                            }
                         }
-                        // 2. Chiave esatta (singolo)
-                        const exactLinkRaw = vavooCache.links.get((channel as any).name);
-                        if (Array.isArray(exactLinkRaw)) {
-                            for (const l of exactLinkRaw) if (!linksArr.includes(l)) linksArr.push(l);
-                        } else if (typeof exactLinkRaw === 'string' && !linksArr.includes(exactLinkRaw)) {
-                            linksArr.push(exactLinkRaw);
-                        }
-                        // 3. Variante (2)
-                        const variant2Raw = vavooCache.links.get(variant2);
-                        if (Array.isArray(variant2Raw)) {
-                            for (const l of variant2Raw) if (!linksArr.includes(l)) linksArr.push(l);
-                        } else if (typeof variant2Raw === 'string' && !linksArr.includes(variant2Raw)) {
-                            linksArr.push(variant2Raw);
-                        }
-                        // 4. Variante 2
-                        const variantNumRaw = vavooCache.links.get(variantNum);
-                        if (Array.isArray(variantNumRaw)) {
-                            for (const l of variantNumRaw) if (!linksArr.includes(l)) linksArr.push(l);
-                        } else if (typeof variantNumRaw === 'string' && !linksArr.includes(variantNumRaw)) {
-                            linksArr.push(variantNumRaw);
-                        }
-                        // Aggiungi tutti i link trovati come stream separati
-                        linksArr.forEach((vavooOriginalLink: string, idx: number) => {
-                            if (typeof vavooOriginalLink !== 'string') return;
+                        allVavooLinks.forEach(({ url, variant }, idx) => {
                             if (tvProxyUrl) {
-                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(vavooOriginalLink)}`;
+                                const vavooProxyUrl = `${tvProxyUrl}/proxy/m3u?url=${encodeURIComponent(url)}`;
                                 streams.push({
-                                    title: idx === 0 ? `[✌️V] ${channel.name}` : `[✌️V-${idx+1}] ${channel.name}`,
+                                    title: `[✌️V${variant}] ${channel.name}`,
                                     url: vavooProxyUrl
                                 });
                             } else {
                                 streams.push({
-                                    title: idx === 0 ? `[❌Proxy][✌️V] ${channel.name}` : `[❌Proxy][✌️V-${idx+1}] ${channel.name}`,
-                                    url: vavooOriginalLink
+                                    title: `[❌Proxy][✌️V${variant}] ${channel.name}`,
+                                    url
                                 });
                             }
                         });
