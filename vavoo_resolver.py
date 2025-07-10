@@ -227,17 +227,8 @@ def build_vavoo_cache(channels):
         url = ch.get("url", "")
         if not name or not url:
             continue
-        # Salva la chiave esatta come lista
-        if name not in cache:
-            cache[name] = []
-        if url not in cache[name]:
-            cache[name].append(url)
-        # Salva anche la chiave base per lookup multiplo
-        base_name = re.sub(r'\s*(\(\d+\)|\d+)$', '', name).strip()
-        if base_name not in cache:
-            cache[base_name] = []
-        if url not in cache[base_name]:
-            cache[base_name].append(url)
+        # Salva OGNI variante come chiave distinta, un solo link per chiave
+        cache[name] = url
     return cache
 
 def mostra_debug_cache():
