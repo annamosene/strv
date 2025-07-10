@@ -169,7 +169,9 @@ function normalizeTitleForSearch(title: string): string {
   };
   let normalized = title;
   for (const [key, value] of Object.entries(replacements)) {
-    normalized = normalized.replace(key, value);
+    if (normalized.includes(key)) {
+      normalized = normalized.replace(new RegExp(key, 'gi'), value);
+    }
   }
   if (normalized.includes('Naruto:')) {
     normalized = normalized.replace(':', '');
@@ -183,30 +185,40 @@ export class AnimeUnityProvider {
   constructor(private config: AnimeUnityConfig) {}
 
   private async searchAllVersions(title: string): Promise<{ version: AnimeUnitySearchResult; language_type: string }[]> {
-      const subPromise = invokePythonScraper(['search', '--query', title]).catch(() => []);
-      const dubPromise = invokePythonScraper(['search', '--query', title, '--dubbed']).catch(() => []);
+      try {
+        const subPromise = invokePythonScraper(['search', '--query', title]).catch(() => []);
+        const dubPromise = invokePythonScraper(['search', '--query', title, '--dubbed']).catch(() => []);
 
-      const [subResults, dubResults]: [AnimeUnitySearchResult[], AnimeUnitySearchResult[]] = await Promise.all([subPromise, dubPromise]);
-      const results: { version: AnimeUnitySearchResult; language_type: string }[] = [];
+        const [subResults, dubResults]: [AnimeUnitySearchResult[], AnimeUnitySearchResult[]] = await Promise.all([subPromise, dubPromise]);
+        const results: { version: AnimeUnitySearchResult; language_type: string }[] = [];
 
-      // Unisci tutti i risultati (SUB e DUB), ma assegna ITA o CR se il nome contiene
-      const allResults = [...subResults, ...dubResults];
-      // Filtra duplicati per nome e id
-      const seen = new Set();
-      for (const r of allResults) {
-        const key = r.name + '|' + r.id;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const nameLower = r.name.toLowerCase();
-        let language_type = 'SUB';
-        if (nameLower.includes('cr')) {
-          language_type = 'CR';
-        } else if (nameLower.includes('ita')) {
-          language_type = 'ITA';
+        console.log(`[AnimeUnity] Risultati SUB per "${title}":`, subResults?.length || 0);
+        console.log(`[AnimeUnity] Risultati DUB per "${title}":`, dubResults?.length || 0);
+
+        // Unisci tutti i risultati (SUB e DUB), ma assegna ITA o CR se il nome contiene
+        const allResults = [...(subResults || []), ...(dubResults || [])];
+        // Filtra duplicati per nome e id
+        const seen = new Set();
+        for (const r of allResults) {
+          if (!r || !r.name || !r.id) continue;
+          const key = r.name + '|' + r.id;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const nameLower = r.name.toLowerCase();
+          let language_type = 'SUB';
+          if (nameLower.includes('cr')) {
+            language_type = 'CR';
+          } else if (nameLower.includes('ita')) {
+            language_type = 'ITA';
+          }
+          results.push({ version: r, language_type });
         }
-        results.push({ version: r, language_type });
+        console.log(`[AnimeUnity] Risultati totali dopo filtro duplicati:`, results.length);
+        return results;
+      } catch (error) {
+        console.error(`[AnimeUnity] Errore in searchAllVersions per "${title}":`, error);
+        return [];
       }
-      return results;
   }
 
   async handleKitsuRequest(kitsuIdString: string): Promise<{ streams: StreamForStremio[] }> {
