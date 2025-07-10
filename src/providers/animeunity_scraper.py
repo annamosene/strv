@@ -64,6 +64,9 @@ def search_anime(query):
             resp = requests.post(search_url, headers=headers, data=payload, timeout=TIMEOUT)
             resp.raise_for_status()
             page_results = resp.json()
+            # DEBUG: mostra query e risposta
+            print(f"[DEBUG] Query inviata: {norm_query}", file=sys.stderr)
+            print(f"[DEBUG] Risposta livesearch: {resp.text[:500]}", file=sys.stderr)
         except Exception as e:
             print(f"[AnimeUnity] Errore ricerca {search_url}: {e}", file=sys.stderr)
             break
