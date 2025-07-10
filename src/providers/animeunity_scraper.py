@@ -91,6 +91,28 @@ def search_anime(query, dubbed=False):
 
     return results
 
+def search_anime_with_fallback(query, dubbed=False):
+    results = search_anime(query, dubbed)
+    if results:
+        return results
+    # Fallback: senza apostrofi
+    if "'" in query or "’" in query:
+        results = search_anime(query.replace("'", "").replace("’", ""), dubbed)
+        if results:
+            return results
+    # Fallback: senza parentesi
+    if "(" in query:
+        results = search_anime(query.split("(")[0].strip(), dubbed)
+        if results:
+            return results
+    # Fallback: prime 3 parole
+    words = query.split()
+    if len(words) > 3:
+        results = search_anime(" ".join(words[:3]), dubbed)
+        if results:
+            return results
+    return []
+
 def get_episodes_list(anime_id):
     """Recupera lista episodi tramite API info_api"""
     episodes = []
@@ -304,7 +326,7 @@ def main():
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     if args.command == "search":
-        results = search_anime(args.query, args.dubbed)
+        results = search_anime_with_fallback(args.query, args.dubbed)
         print(json.dumps(results, indent=4))
     elif args.command == "get_episodes":
         results = get_episodes_list(args.anime_id)
