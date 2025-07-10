@@ -373,121 +373,33 @@ async function updateVavooCache(): Promise<boolean> {
 
     vavooCache.updating = true;
     console.log(`📺 Avvio aggiornamento cache Vavoo...`);
-    
     try {
-        // Recupera tutti i nomi dei canali dai canali configurati
-        const channelNames = tvChannels.map(channel => channel.name).filter(Boolean);
-        
-        // Aggiorna la cache per tutti i canali
-        const updatedLinks = new Map<string, string | string[]>();
-        let successCount = 0;
-        let errorCount = 0;
+        // PATCH: Prendi TUTTI i canali da Vavoo, senza filtri su tv_channels.json
+        const result = await execFilePromise('python3', [
+            path.join(__dirname, '../vavoo_resolver.py'),
+            '--dump-channels'
+        ], { timeout: 30000 });
 
-        // Ottieni la lista completa Vavoo
-        try {
-            const result = await execFilePromise('python3', [
-                path.join(__dirname, '../vavoo_resolver.py'), 
-                '--dump-channels'
-            ], { timeout: 30000 });
-            
-            if (result.stdout) {
-                try {
-                    const channels = JSON.parse(result.stdout);
-                    console.log(`📺 Recuperati ${channels.length} canali da Vavoo`);
-                    
-                    // Funzione di normalizzazione per confronti più efficaci
-                    const normalizeChannelName = (name: string): string => {
-                        return name.toLowerCase()
-                            .replace(/[^\w\s]/g, '') // Rimuove punteggiatura
-                            .replace(/\s+/g, '')     // Rimuove spazi
-                            .replace(/hd$/i, '')     // Rimuove HD alla fine
-                            .trim();
-                    };
-                    
-                    // Crea un indice veloce per la ricerca
-                    const vavooChannelMap = new Map();
-                    channels.forEach((c: any) => {
-                        if (c.name) {
-                            vavooChannelMap.set(normalizeChannelName(c.name), c);
-                            
-                            // Aggiungi anche gli alias all'indice
-                            if (c.aliases && Array.isArray(c.aliases)) {
-                                c.aliases.forEach((alias: string) => {
-                                    vavooChannelMap.set(normalizeChannelName(alias), c);
-                                });
-                            }
-                        }
-                    });
-                    
-                    // Per ogni canale TV configurato, cerca una corrispondenza nella lista Vavoo
-                    for (const tvChannel of tvChannels) {
-                        if (!tvChannel.name) continue;
-                        
-                        const normalizedName = normalizeChannelName(tvChannel.name);
-                        
-                        // Prima cerca una corrispondenza esatta
-                        if (vavooChannelMap.has(normalizedName)) {
-                            const matchingChannel = vavooChannelMap.get(normalizedName);
-                            if (matchingChannel && matchingChannel.url) {
-                                updatedLinks.set(tvChannel.name, matchingChannel.url);
-                                successCount++;
-                                continue;
-                            }
-                        }
-                        
-                        // Se non troviamo una corrispondenza diretta, cerchiamo una corrispondenza parziale
-                        let bestMatch = null;
-                        let bestMatchScore = 0;
-                        
-                        for (const [normalizedVavooName, vavooChannel] of vavooChannelMap.entries()) {
-                            // Corrispondenza se una stringa è contenuta nell'altra
-                            if (normalizedVavooName.includes(normalizedName) || normalizedName.includes(normalizedVavooName)) {
-                                const lengthScore = Math.min(normalizedVavooName.length, normalizedName.length) / 
-                                                  Math.max(normalizedVavooName.length, normalizedName.length);
-                                
-                                if (lengthScore > bestMatchScore) {
-                                    bestMatch = vavooChannel;
-                                    bestMatchScore = lengthScore;
-                                }
-                            }
-                        }
-                        
-                        if (bestMatch && bestMatch.url && bestMatchScore > 0.6) {
-                            updatedLinks.set(tvChannel.name, bestMatch.url);
-                            successCount++;
-                            console.log(`📺 Corrispondenza parziale trovata per ${tvChannel.name} -> ${bestMatch.name} (score: ${bestMatchScore.toFixed(2)})`);
-                        } else {
-                            console.log(`⚠️ Nessuna corrispondenza trovata per ${tvChannel.name}`);
-                            errorCount++;
-                        }
+        if (result.stdout) {
+            try {
+                const channels = JSON.parse(result.stdout);
+                console.log(`📺 Recuperati ${channels.length} canali da Vavoo (nessun filtro)`);
+                const updatedLinks = new Map<string, string>();
+                for (const ch of channels) {
+                    if (ch.name && ch.url) {
+                        updatedLinks.set(ch.name, ch.url);
                     }
-                    
-                } catch (jsonError) {
-                    console.error('❌ Errore nel parsing del risultato JSON di Vavoo:', jsonError);
-                    throw jsonError;
                 }
-            }
-        } catch (execError) {
-            console.error('❌ Errore nell\'esecuzione dello script Vavoo:', execError);
-            throw execError;
-        }
-
-        // Preserva i link esistenti che non sono stati aggiornati
-        for (const [channelName, url] of vavooCache.links.entries()) {
-            if (!updatedLinks.has(channelName)) {
-                updatedLinks.set(channelName, url);
+                vavooCache.links = updatedLinks;
+                vavooCache.timestamp = Date.now();
+                saveVavooCache();
+                console.log(`✅ Cache Vavoo aggiornata: ${updatedLinks.size} canali in cache (tutti)`);
+                return true;
+            } catch (jsonError) {
+                console.error('❌ Errore nel parsing del risultato JSON di Vavoo:', jsonError);
+                throw jsonError;
             }
         }
-
-        // Aggiorna la cache con i nuovi link
-        vavooCache.links = updatedLinks;
-        vavooCache.timestamp = Date.now();
-        
-        // Salva la cache su file
-        saveVavooCache();
-        
-        console.log(`✅ Cache Vavoo aggiornata: ${successCount} canali trovati, ${errorCount} non trovati, totale ${updatedLinks.size} canali in cache`);
-        return true;
     } catch (error) {
         console.error('❌ Errore durante l\'aggiornamento della cache Vavoo:', error);
         return false;
