@@ -288,6 +288,49 @@ export class AnimeUnityProvider {
     const normalizedTitle = normalizeTitleForSearch(title);
     console.log(`[AnimeUnity] Titolo normalizzato per ricerca: ${normalizedTitle}`);
     let animeVersions = await this.searchAllVersions(normalizedTitle);
+    // Fallback: se non trova nulla, prova anche con titoli alternativi
+    if (!animeVersions.length) {
+      // Prova a ottenere titoli alternativi da Jikan (se hai il MAL ID)
+      let fallbackTitles: string[] = [];
+      try {
+        // Prova a estrarre MAL ID dal titolo (se è un numero)
+        const malIdMatch = title.match && title.match(/\d+/);
+        const malId = malIdMatch ? malIdMatch[0] : null;
+        if (malId) {
+          const jikanResp = await (await fetch(`https://api.jikan.moe/v4/anime/${malId}`)).json();
+          fallbackTitles = [
+            jikanResp.data?.title_japanese,
+            jikanResp.data?.title,
+            jikanResp.data?.title_english
+          ].filter(Boolean);
+        }
+      } catch {}
+      // Prova fallback con titoli alternativi
+      for (const fallbackTitle of fallbackTitles) {
+        if (fallbackTitle && fallbackTitle !== normalizedTitle) {
+          animeVersions = await this.searchAllVersions(fallbackTitle);
+          if (animeVersions.length) break;
+        }
+      }
+      // Fallback: senza apostrofi
+      if (!animeVersions.length && normalizedTitle.includes("'")) {
+        const noApos = normalizedTitle.replace(/'/g, "");
+        animeVersions = await this.searchAllVersions(noApos);
+      }
+      // Fallback: senza parentesi
+      if (!animeVersions.length && normalizedTitle.includes("(")) {
+        const noParens = normalizedTitle.split("(")[0].trim();
+        animeVersions = await this.searchAllVersions(noParens);
+      }
+      // Fallback: prime 3 parole
+      if (!animeVersions.length) {
+        const words = normalizedTitle.split(" ");
+        if (words.length > 3) {
+          const first3 = words.slice(0, 3).join(" ");
+          animeVersions = await this.searchAllVersions(first3);
+        }
+      }
+    }
     animeVersions = filterAnimeResults(animeVersions, normalizedTitle);
     if (!animeVersions.length) {
       console.warn('[AnimeUnity] Nessun risultato trovato per il titolo:', normalizedTitle);
