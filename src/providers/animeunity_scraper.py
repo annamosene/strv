@@ -17,9 +17,16 @@ from urllib.parse import urlparse, urljoin, unquote
 import json, os
 with open(os.path.join(os.path.dirname(__file__), '../../config/domains.json'), encoding='utf-8') as f:
     DOMAINS = json.load(f)
-BASE_URL = f"https://{DOMAINS['animeunity']}"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-HEADERS = {"User-Agent": USER_AGENT}
+BASE_URL = f"https://www.{DOMAINS['animeunity']}"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1"
+}
 TIMEOUT = 20
 
 def get_session_tokens():
