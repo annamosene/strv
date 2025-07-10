@@ -406,6 +406,7 @@ async function updateVavooCache(): Promise<boolean> {
     } finally {
         vavooCache.updating = false;
     }
+    return false;
 }
 
 try {
