@@ -45,7 +45,11 @@ def get_session_tokens():
 
 def search_anime(query, dubbed=False):
     """Ricerca anime tramite API livesearch e archivio"""
-    session_data = get_session_tokens()
+    try:
+        session_data = get_session_tokens()
+    except Exception as e:
+        print(f"⚠️ Errore ottenimento token di sessione: {e}", file=sys.stderr)
+        return []
 
     results = []
     seen_ids = set()
@@ -70,25 +74,32 @@ def search_anime(query, dubbed=False):
                 timeout=TIMEOUT
             )
             response.raise_for_status()
+            
+            data = response.json()
+            print(f"Debug: Risposta da {endpoint['url']}: {data.get('records', [])[:2]}", file=sys.stderr)
 
-            for record in response.json().get("records", []):
+            for record in data.get("records", []):
+                if not record or not record.get("id"):
+                    continue
                 anime_id = record["id"]
                 if anime_id not in seen_ids:
                     seen_ids.add(anime_id)
                     title = (record.get("title_it") or
                             record.get("title_eng") or
                             record.get("title") or "")
-                    results.append({
-                        "id": anime_id,
-                        "slug": record["slug"],
-                        "name": title.strip(),
-                        "episodes_count": record.get("episodes_count", 0)
-                    })
+                    if title.strip():
+                        results.append({
+                            "id": anime_id,
+                            "slug": record.get("slug", ""),
+                            "name": title.strip(),
+                            "episodes_count": record.get("episodes_count", 0)
+                        })
         except Exception as e:
             # Print error to stderr so it doesn't interfere with JSON output
             print(f"⚠️ Errore ricerca {endpoint['url']}: {e}", file=sys.stderr)
             continue
 
+    print(f"Debug: Trovati {len(results)} risultati per '{query}'", file=sys.stderr)
     return results
 
 def search_anime_with_fallback(query, dubbed=False):
@@ -326,7 +337,7 @@ def main():
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     if args.command == "search":
-        results = search_anime(args.query, args.dubbed)
+        results = search_anime_with_fallback(args.query, args.dubbed)
         print(json.dumps(results, indent=4))
     elif args.command == "get_episodes":
         results = get_episodes_list(args.anime_id)
