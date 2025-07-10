@@ -183,9 +183,10 @@ export class AnimeUnityProvider {
   constructor(private config: AnimeUnityConfig) {}
 
   private async searchAllVersions(title: string): Promise<{ version: AnimeUnitySearchResult; language_type: string }[]> {
-    // Chiamata diretta: i fallback sono gestiti dal Python
+    console.log("[DEBUG] Query inviata a Python:", title);
     const args = ['search', '--query', title];
     let results: AnimeUnitySearchResult[] = await invokePythonScraper(args);
+    console.log("[DEBUG] Risultati ricevuti da Python:", results);
     // Normalizza i titoli dei risultati per confronto robusto
     results = results.map(r => ({
       ...r,
