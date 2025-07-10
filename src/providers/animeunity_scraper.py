@@ -43,72 +43,76 @@ def get_session_tokens():
         }
     }
 
-def search_anime(query, dubbed=False):
-    """Ricerca anime tramite API livesearch e archivio"""
-    session_data = get_session_tokens()
-
+def search_anime(query):
+    """Ricerca anime tramite la barra di ricerca di AnimeUnity, con fallback e normalizzazione come branch originale StreamViX"""
     results = []
-    seen_ids = set()
-
-    # Endpoint di ricerca
-    search_endpoints = [
-        {"url": f"{BASE_URL}/livesearch", "payload": {"title": query}},
-        {"url": f"{BASE_URL}/archivio/get-animes", "payload": {
-            "title": query, "type": False, "year": False,
-            "order": "Lista A-Z", "status": False, "genres": False,
-            "season": False, "offset": 0, "dubbed": dubbed
-        }}
-    ]
-
-    for endpoint in search_endpoints:
+    page = 1
+    # Normalizzazione base
+    norm_query = query.strip().replace("'", "").replace('’', '').replace('‘', '').replace('"', '').replace('“', '').replace('”', '')
+    while True:
+        search_url = f"{BASE_URL}/livesearch"
+        headers = {
+            "User-Agent": USER_AGENT,
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": BASE_URL + "/",
+            "Origin": BASE_URL,
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=UTF-8"
+        }
+        payload = json.dumps({"title": norm_query})
         try:
-            response = requests.post(
-                endpoint["url"],
-                json=endpoint["payload"],
-                headers=session_data["session_headers"],
-                cookies=session_data["cookies"],
-                timeout=TIMEOUT
-            )
-            response.raise_for_status()
-
-            for record in response.json().get("records", []):
-                anime_id = record["id"]
-                if anime_id not in seen_ids:
-                    seen_ids.add(anime_id)
-                    title = (record.get("title_it") or
-                            record.get("title_eng") or
-                            record.get("title") or "")
-                    results.append({
-                        "id": anime_id,
-                        "slug": record["slug"],
-                        "name": title.strip(),
-                        "episodes_count": record.get("episodes_count", 0)
-                    })
+            resp = requests.post(search_url, headers=headers, data=payload, timeout=TIMEOUT)
+            resp.raise_for_status()
+            page_results = resp.json()
         except Exception as e:
-            # Print error to stderr so it doesn't interfere with JSON output
-            print(f"⚠️ Errore ricerca {endpoint['url']}: {e}", file=sys.stderr)
-            continue
-
+            print(f"[AnimeUnity] Errore ricerca {search_url}: {e}", file=sys.stderr)
+            break
+        if not page_results:
+            break
+        for item in page_results:
+            results.append({
+                "id": item.get("id"),
+                "slug": item.get("slug"),
+                "name": item.get("name"),
+                "episodes_count": item.get("episodes_count", 0)
+            })
+        break  # livesearch non ha paginazione
+    # Fallback: senza apostrofi
+    if not results and ("'" in query or "’" in query or "‘" in query):
+        fallback_query = query.replace("'", "").replace('’', '').replace('‘', '')
+        if fallback_query != query:
+            return search_anime(fallback_query)
+    # Fallback: senza parentesi
+    if not results and "(" in query:
+        fallback_query = query.split("(")[0].strip()
+        if fallback_query != query:
+            return search_anime(fallback_query)
+    # Fallback: prime 3 parole
+    if not results:
+        words = query.split()
+        if len(words) > 3:
+            fallback_query = " ".join(words[:3])
+            return search_anime(fallback_query)
     return results
 
 def search_anime_with_fallback(query, dubbed=False):
-    results = search_anime(query, dubbed)
+    results = search_anime(query)
     if results:
         return results
     # Fallback: senza apostrofi
     if "'" in query or "’" in query:
-        results = search_anime(query.replace("'", "").replace("’", ""), dubbed)
+        results = search_anime(query.replace("'", "").replace("’", ""))
         if results:
             return results
     # Fallback: senza parentesi
     if "(" in query:
-        results = search_anime(query.split("(")[0].strip(), dubbed)
+        results = search_anime(query.split("(")[0].strip())
         if results:
             return results
     # Fallback: prime 3 parole
     words = query.split()
     if len(words) > 3:
-        results = search_anime(" ".join(words[:3]), dubbed)
+        results = search_anime(" ".join(words[:3]))
         if results:
             return results
     return []
