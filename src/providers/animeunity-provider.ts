@@ -183,23 +183,30 @@ export class AnimeUnityProvider {
   constructor(private config: AnimeUnityConfig) {}
 
   private async searchAllVersions(title: string): Promise<{ version: AnimeUnitySearchResult; language_type: string }[]> {
-    console.log("[DEBUG] Query inviata a Python:", title);
-    const args = ['search', '--query', title];
-    let results: AnimeUnitySearchResult[] = await invokePythonScraper(args);
-    console.log("[DEBUG] Risultati ricevuti da Python:", results);
-    // Normalizza i titoli dei risultati per confronto robusto
-    results = results.map(r => ({
-      ...r,
-      name: r.name ? r.name.normalize('NFKC') : ''
-    }));
-    return results.map(r => {
-      // Determina il tipo di lingua dal titolo
-      const nameLower = r.name.toLowerCase();
-      let language_type = 'SUB';
-      if (nameLower.includes('ita')) language_type = 'ITA';
-      else if (nameLower.includes('cr')) language_type = 'CR';
-      return { version: r, language_type };
-    });
+      const subPromise = invokePythonScraper(['search', '--query', title]).catch(() => []);
+      const dubPromise = invokePythonScraper(['search', '--query', title, '--dubbed']).catch(() => []);
+
+      const [subResults, dubResults]: [AnimeUnitySearchResult[], AnimeUnitySearchResult[]] = await Promise.all([subPromise, dubPromise]);
+      const results: { version: AnimeUnitySearchResult; language_type: string }[] = [];
+
+      // Unisci tutti i risultati (SUB e DUB), ma assegna ITA o CR se il nome contiene
+      const allResults = [...subResults, ...dubResults];
+      // Filtra duplicati per nome e id
+      const seen = new Set();
+      for (const r of allResults) {
+        const key = r.name + '|' + r.id;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const nameLower = r.name.toLowerCase();
+        let language_type = 'SUB';
+        if (nameLower.includes('cr')) {
+          language_type = 'CR';
+        } else if (nameLower.includes('ita')) {
+          language_type = 'ITA';
+        }
+        results.push({ version: r, language_type });
+      }
+      return results;
   }
 
   async handleKitsuRequest(kitsuIdString: string): Promise<{ streams: StreamForStremio[] }> {
